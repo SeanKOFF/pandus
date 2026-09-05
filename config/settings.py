@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -157,3 +158,71 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 # local | onedrive
 PHOTO_STORAGE = os.environ.get("PHOTO_STORAGE", "local")
 PHOTO_LOCAL_ROOT = BASE_DIR / "photos"   # вне static/, наружу не раздаётся
+
+# ============================================================
+# Безопасность боевого режима
+# ============================================================
+# Включается автоматически при DEBUG=False, чтобы нельзя было
+# случайно выкатить сайт с настройками разработки.
+
+if not DEBUG:
+    # Ключ подписывает сессии и токены сброса пароля. Со значением по
+    # умолчанию сессию модератора можно подделать, поэтому лучше упасть
+    # при старте, чем молча работать уязвимым.
+    if SECRET_KEY in ("", "dev-insecure-change-me") or SECRET_KEY.startswith("django-insecure-"):
+        raise ImproperlyConfigured(
+            "DJANGO_SECRET_KEY не задан. Сгенерируйте ключ командой:\n"
+            "  python -c \"import secrets; print(secrets.token_urlsafe(64))\"\n"
+            "и добавьте его в .env"
+        )
+
+    if "*" in ALLOWED_HOSTS:
+        raise ImproperlyConfigured("ALLOWED_HOSTS не должен содержать '*' в боевом режиме")
+
+    # HTTPS
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000          # год
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # Nginx/Caddy терминируют TLS и передают исходную схему этим заголовком
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    # Прочее
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SESSION_COOKIE_HTTPONLY = True
+    X_FRAME_OPTIONS = "DENY"
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{h.strip()}" for h in ALLOWED_HOSTS if h.strip() and h != "localhost"
+    ]
+
+    # Сессия модератора живёт сутки и закрывается вместе с браузером
+    SESSION_COOKIE_AGE = 60 * 60 * 24
+    SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+
+# --- Лимиты приёма заявок (защита от заваливания карты мусором) ---
+REPORTS_PER_HOUR = int(os.environ.get("REPORTS_PER_HOUR", "5"))
+REPORTS_PER_DAY = int(os.environ.get("REPORTS_PER_DAY", "20"))
+
+# --- Почта ---
+# Нужна только для восстановления пароля модератора. Если SMTP не настроен,
+# пароль меняется командой: python manage.py changepassword <логин>
+if not DEBUG:
+    DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@localhost")
+    _email_host = os.environ.get("EMAIL_HOST", "")
+    if _email_host:
+        MAILERS = {
+            "default": {
+                "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
+                "OPTIONS": {
+                    "host": _email_host,
+                    "port": int(os.environ.get("EMAIL_PORT", "587")),
+                    "username": os.environ.get("EMAIL_HOST_USER", ""),
+                    "password": os.environ.get("EMAIL_HOST_PASSWORD", ""),
+                    "use_tls": True,
+                },
+            }
+        }
+    else:
+        MAILERS = {"default": {"BACKEND": "django.core.mail.backends.dummy.EmailBackend"}}

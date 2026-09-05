@@ -88,6 +88,29 @@ def count_user_reports(reporter):
     return reporter.reports.count()
 
 
+@sync_to_async
+def rate_limit_exceeded(reporter):
+    """Ограничивает поток заявок от одного человека.
+
+    Без этого один пользователь за вечер способен забить карту сотнями
+    точек, и модерация встанет. Лимиты настраиваются в .env.
+    """
+    from datetime import timedelta
+
+    from django.utils import timezone as tz
+
+    now = tz.now()
+    per_hour = reporter.reports.filter(created_at__gte=now - timedelta(hours=1)).count()
+    if per_hour >= settings.REPORTS_PER_HOUR:
+        return f"Вы отправили {per_hour} заявок за последний час. Продолжить можно позже."
+
+    per_day = reporter.reports.filter(created_at__gte=now - timedelta(days=1)).count()
+    if per_day >= settings.REPORTS_PER_DAY:
+        return f"Вы отправили {per_day} заявок за сутки. Продолжить можно завтра."
+
+    return None
+
+
 # --- Клавиатуры ----------------------------------------------------
 
 def location_kb():
@@ -126,10 +149,19 @@ async def cmd_start(message: Message, state: FSMContext):
 
     await state.clear()
     await state.set_state(Flow.waiting_location)
+    limit_msg = await rate_limit_exceeded(reporter)
+    if limit_msg:
+        await message.answer(limit_msg)
+        return
+
     await message.answer(
         "Здесь можно сообщить о месте, где нет условий для проезда: "
         "отсутствует пандус, разбит тротуар, перекрыт проход.\n\n"
-        "После проверки модератором точка появится на общей карте города.\n\n"
+        "Что важно знать: присланные фотографии и координаты места "
+        "публикуются на открытой карте города — их увидит любой человек. "
+        "Ваше имя и контакты не публикуются. Если позже захотите убрать "
+        "свою заявку с карты, напишите /delete.\n\n"
+        "Отправляя заявку, вы соглашаетесь с публикацией фотографии.\n\n"
         "Шаг 1 из 3. Отправьте геолокацию места — кнопкой ниже "
         "или через скрепку → «Геопозиция».",
         reply_markup=location_kb(),
@@ -150,14 +182,24 @@ async def cmd_my(message: Message):
     await message.answer(f"Вы отправили заявок: {total}")
 
 
+@dp.message(Command("delete"))
+async def cmd_delete(message: Message):
+    await message.answer(
+        "Чтобы убрать заявку с карты, пришлите её номер и короткое пояснение "
+        "сюда: заявки снимает модератор вручную.\n\n"
+        "Посмотреть свои заявки: /my"
+    )
+
+
 @dp.message(Flow.waiting_location, F.location)
 async def got_location(message: Message, state: FSMContext):
     await state.update_data(lat=message.location.latitude, lng=message.location.longitude)
     await state.set_state(Flow.waiting_photo)
     await message.answer(
         "Шаг 2 из 3. Теперь пришлите фотографию места.\n\n"
-        "Постарайтесь, чтобы в кадр не попадали лица людей и "
-        "номера автомобилей — снимки публикуются открыто.",
+        "Снимайте так, чтобы в кадр не попадали лица людей, "
+        "номера автомобилей и таблички с адресами квартир — "
+        "фотография будет опубликована открыто.",
         reply_markup=ReplyKeyboardRemove(),
     )
 
