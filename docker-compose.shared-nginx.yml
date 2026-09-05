@@ -1,0 +1,18 @@
+# Надстройка: сайт живёт за уже работающим на сервере nginx.
+# Порты наружу не публикуются — nginx находит контейнер по имени в сети.
+#
+# Имя чужой сети задаётся в .env переменной PROXY_NETWORK, поэтому при
+# переезде на сервер с другим стеком меняется одна строка в .env,
+# а не конфигурация compose.
+
+services:
+  web:
+    networks:
+      web_proxy:
+        aliases:
+          - ${PROJECT_PREFIX:-pandus}-web
+
+networks:
+  web_proxy:
+    external: true
+    name: ${PROXY_NETWORK}

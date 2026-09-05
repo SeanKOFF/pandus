@@ -1,0 +1,71 @@
+# Базовая конфигурация: одинакова на любом хостинге.
+# Ничего специфичного для конкретного сервера здесь нет.
+#
+# Способ выхода наружу выбирается файлом-надстройкой:
+#   docker-compose.caddy.yml         — свой Caddy, TLS автоматически
+#   docker-compose.shared-nginx.yml  — за чужим nginx на том же сервере
+#
+# Какая надстройка используется, задаётся переменной COMPOSE_FILE в .env,
+# поэтому команды всегда одни и те же: docker compose up -d --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ${PROJECT_PREFIX:-pandus}-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      internal:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    container_name: ${PROJECT_PREFIX:-pandus}-web
+    restart: unless-stopped
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60
+    entrypoint: ["/app/entrypoint.sh"]
+    env_file: .env
+    environment:
+      DB_HOST: db
+      PHOTO_LOCAL_ROOT: /data/photos
+    volumes:
+      - photos:/data/photos
+    networks:
+      internal:
+    depends_on:
+      db:
+        condition: service_healthy
+
+  bot:
+    build: .
+    container_name: ${PROJECT_PREFIX:-pandus}-bot
+    restart: unless-stopped
+    command: python manage.py bot
+    entrypoint: ["/app/entrypoint.sh"]
+    env_file: .env
+    environment:
+      DB_HOST: db
+      PHOTO_LOCAL_ROOT: /data/photos
+    volumes:
+      - photos:/data/photos    # тот же том, что у web: бот пишет, сайт отдаёт
+    networks:
+      internal:                # наружу боту не нужно — только база и Telegram
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  internal:
+
+volumes:
+  pgdata:
+  photos:

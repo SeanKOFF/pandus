@@ -1,0 +1,26 @@
+# Надстройка: автономный режим. Свой Caddy занимает порты 80/443
+# и сам получает сертификат Let's Encrypt для DOMAIN.
+# Подходит для чистого сервера, где порты свободны.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: ${PROJECT_PREFIX:-pandus}-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data          # здесь живут TLS-сертификаты
+      - caddy_config:/config
+    networks:
+      internal:
+    depends_on:
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,64 @@
+# Шаблон виртуального хоста. Домен и имя контейнера подставляются
+# из .env скриптом deploy/render-nginx-conf.sh — правьте .env, не этот файл.
+#
+# Кладётся отдельным файлом в /etc/nginx/conf.d/ чужого nginx.
+# Его собственный конфиг не изменяется: чтобы всё вернуть, достаточно
+# убрать этот файл.
+#
+# ВАЖНО: proxy_pass через переменную + resolver 127.0.0.11 — то же решение,
+# что уже применено для upstream `api`. Без него nginx откажется стартовать,
+# когда контейнер ${PROJECT_PREFIX}-web недоступен, и вместе с картой упадут
+# svetanet.uz, chiroqyoq.uz и gazyoq.uz.
+
+server {
+    listen 80;
+    server_name ${DOMAIN};
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name ${DOMAIN};
+
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json;
+
+    client_max_body_size 15m;
+
+    location / {
+        resolver 127.0.0.11 valid=10s;
+        set $upstream_site ${PROJECT_PREFIX}-web;
+        proxy_pass http://$upstream_site:8000;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        # Django узнаёт по этому заголовку, что снаружи HTTPS,
+        # иначе SECURE_SSL_REDIRECT зациклит редиректы
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 60s;
+    }
+
+    # Фотографии кешируются надолго: файл по своему адресу не меняется
+    location /media/ {
+        resolver 127.0.0.11 valid=10s;
+        set $upstream_site_media ${PROJECT_PREFIX}-web;
+        proxy_pass http://$upstream_site_media:8000;
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_valid 200 1d;
+    }
+}

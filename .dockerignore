@@ -1,0 +1,15 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+db.sqlite3
+photos/
+staticfiles/
+.env
+.env.*
+!.env.example
+!.env.production.example
+docs/
+*.zip
+.DS_Store

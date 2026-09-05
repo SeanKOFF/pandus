@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -133,7 +134,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 
 # Email
@@ -157,7 +163,7 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 # --- Хранилище фотографий ---
 # local | onedrive
 PHOTO_STORAGE = os.environ.get("PHOTO_STORAGE", "local")
-PHOTO_LOCAL_ROOT = BASE_DIR / "photos"   # вне static/, наружу не раздаётся
+PHOTO_LOCAL_ROOT = Path(os.environ.get("PHOTO_LOCAL_ROOT", BASE_DIR / "photos"))  # вне static/, наружу не раздаётся
 
 # ============================================================
 # Безопасность боевого режима

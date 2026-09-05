@@ -27,7 +27,8 @@
 - [x] Локальное хранилище фото + прокси `/media/<id>/`
 - [ ] Хранилище OneDrive (интерфейс готов, backend — заглушка)
 - [ ] Уведомление автора заявки о публикации / устранении
-- [ ] Развёртывание на сервере
+- [x] Конфигурация развёртывания (Docker Compose + Caddy) — `docs/deployment.md`
+- [ ] Развёрнуто на боевом сервере
 
 Подробности решений — в `docs/architecture.md`.
 
@@ -70,6 +71,23 @@ USE_SQLITE=1 python manage.py bot
 | http://127.0.0.1:8000/admin/ | Админка модерации |
 | http://127.0.0.1:8000/api/points/ | Точки для карты (JSON) |
 | http://127.0.0.1:8000/api/categories/ | Категории для легенды |
+
+## Развёртывание
+
+Режим задаётся переменной `COMPOSE_FILE` в `.env`, команды в обоих
+случаях одинаковые — `docker compose up -d --build`:
+
+- `docker-compose.yml:docker-compose.shared-nginx.yml` — за уже
+  работающим на сервере nginx, портов наружу не публикует
+- `docker-compose.yml:docker-compose.caddy.yml` — автономно, свой Caddy
+  получает TLS автоматически
+
+Документация:
+
+- `docs/deployment.md` — автономный сервер с нуля
+- `docs/deployment-sveton.md` — рядом с работающими сайтами
+- `docs/migration.md` — переезд на другой сервер или хостинг
+- `docs/security-checklist.md` — чек-лист перед запуском
 
 ## Структура
 
