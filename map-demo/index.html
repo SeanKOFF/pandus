@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Карта доступности — демо</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --bg-panel:#FBFBF9;
+    --ink:#1C2B33;
+    --ink-soft:#5B6B72;
+    --line:#E2E0D8;
+    --teal:#146C8E;
+    --teal-dark:#0F5570;
+    --red:#C4292E;
+    --red-tint:#F6DEDD;
+    --amber:#B9760A;
+    --amber-tint:#F5E7C6;
+    --slate:#546670;
+    --slate-tint:#E5E9EA;
+    --green:#3F7D53;
+    --green-tint:#DCEBE1;
+    --radius-card:14px;
+    --radius-pill:999px;
+    --shadow:0 10px 30px rgba(28,43,51,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    font-family:'IBM Plex Sans', sans-serif;
+    color:var(--ink);
+    background:#EEF0EE;
+  }
+  #map{
+    position:absolute; inset:0;
+    z-index:0;
+  }
+
+  /* ---------- Top bar ---------- */
+  #topbar{
+    position:absolute; top:16px; left:16px; right:16px;
+    z-index:500;
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap:12px;
+    pointer-events:none;
+  }
+  #topbar > *{ pointer-events:auto; }
+  .brand{
+    background:var(--bg-panel);
+    border-radius:var(--radius-card);
+    box-shadow:var(--shadow);
+    padding:14px 20px;
+    max-width:340px;
+  }
+  .brand h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:19px;
+    font-weight:700;
+    margin:0 0 2px 0;
+    letter-spacing:-0.01em;
+  }
+  .brand p{
+    margin:0;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .counter{
+    background:var(--teal);
+    color:#fff;
+    border-radius:var(--radius-card);
+    box-shadow:var(--shadow);
+    padding:12px 20px;
+    text-align:right;
+    min-width:120px;
+  }
+  .counter .num{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:28px;
+    font-weight:700;
+    line-height:1;
+    display:block;
+  }
+  .counter .label{
+    font-size:12px;
+    opacity:0.85;
+  }
+
+  /* ---------- Legend ---------- */
+  #legend{
+    position:absolute; left:16px; bottom:16px;
+    z-index:500;
+    background:var(--bg-panel);
+    border-radius:var(--radius-card);
+    box-shadow:var(--shadow);
+    padding:14px 16px;
+    width:230px;
+    font-size:13.5px;
+  }
+  #legend h2{
+    font-size:13px;
+    font-weight:600;
+    margin:0 0 10px 0;
+    color:var(--ink-soft);
+  }
+  .legend-row{
+    display:flex; align-items:center; gap:9px;
+    padding:5px 0;
+    cursor:pointer;
+    user-select:none;
+  }
+  .legend-row input{ display:none; }
+  .swatch{
+    width:11px; height:11px; border-radius:50%;
+    flex:none;
+    box-shadow:0 0 0 3px transparent;
+  }
+  .legend-row.off .swatch{ opacity:0.25; }
+  .legend-row.off .legend-text{ color:var(--ink-soft); text-decoration:line-through; }
+  .legend-text{ flex:1; }
+  .legend-count{ color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .sw-no-ramp{ background:var(--red); }
+  .sw-broken{ background:var(--amber); }
+  .sw-blocked{ background:var(--slate); }
+  .sw-resolved{ background:var(--green); }
+
+  /* ---------- Floating report button ---------- */
+  #reportBtn{
+    position:absolute; right:16px; bottom:16px;
+    z-index:500;
+    background:var(--red);
+    color:#fff;
+    border:none;
+    border-radius:var(--radius-pill);
+    padding:14px 22px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:14.5px;
+    font-weight:600;
+    box-shadow:var(--shadow);
+    cursor:pointer;
+  }
+  #reportBtn:hover{ background:#a92024; }
+
+  /* ---------- Modal ---------- */
+  #modalWrap{
+    position:fixed; inset:0; z-index:1000;
+    background:rgba(20,28,32,0.45);
+    display:none;
+    align-items:center; justify-content:center;
+    padding:20px;
+  }
+  #modalWrap.open{ display:flex; }
+  #modal{
+    background:var(--bg-panel);
+    border-radius:var(--radius-card);
+    max-width:380px;
+    padding:26px;
+    box-shadow:var(--shadow);
+  }
+  #modal h3{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:18px;
+    margin:0 0 10px 0;
+  }
+  #modal p{
+    font-size:14px;
+    line-height:1.55;
+    color:var(--ink-soft);
+    margin:0 0 18px 0;
+  }
+  #modal button{
+    background:var(--ink);
+    color:#fff;
+    border:none;
+    border-radius:var(--radius-pill);
+    padding:10px 18px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  /* ---------- Markers ---------- */
+  .pin-wrap{
+    width:28px; height:28px;
+    display:flex; align-items:center; justify-content:center;
+    transform:scale(0.4);
+    opacity:0;
+    animation:pin-in 0.45s cubic-bezier(.2,1.4,.4,1) forwards;
+  }
+  @keyframes pin-in{ to{ transform:scale(1); opacity:1; } }
+  .pin{
+    width:22px; height:22px; border-radius:50%;
+    border:2.5px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.35);
+    position:relative;
+  }
+  .pin::after{
+    content:'';
+    position:absolute; inset:-6px;
+    border-radius:50%;
+    border:2px solid currentColor;
+    opacity:0;
+    animation:ring 2.4s ease-out infinite;
+  }
+  .pin.pin-resolved::after{ animation:none; }
+  @keyframes ring{
+    0%{ opacity:0.55; transform:scale(0.6); }
+    70%{ opacity:0; transform:scale(1.6); }
+    100%{ opacity:0; transform:scale(1.6); }
+  }
+  .pin-no-ramp{ background:var(--red); color:var(--red); }
+  .pin-broken{ background:var(--amber); color:var(--amber); }
+  .pin-blocked{ background:var(--slate); color:var(--slate); }
+  .pin-resolved{ background:var(--green); color:var(--green); }
+
+  /* ---------- Leaflet overrides ---------- */
+  .leaflet-tooltip.card-tip{
+    background:var(--bg-panel);
+    border:none;
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    padding:0;
+    opacity:1;
+  }
+  .leaflet-tooltip.card-tip::before{ display:none; }
+  .tip-inner{ display:flex; align-items:center; gap:8px; padding:6px; width:190px; }
+  .tip-inner svg{ width:52px; height:38px; border-radius:6px; flex:none; }
+  .tip-title{ font-size:12.5px; font-weight:600; line-height:1.25; }
+
+  .leaflet-popup-content-wrapper{
+    background:var(--bg-panel);
+    border-radius:var(--radius-card);
+    box-shadow:var(--shadow);
+    padding:0;
+  }
+  .leaflet-popup-content{ margin:0; width:250px !important; }
+  .leaflet-popup-tip{ background:var(--bg-panel); }
+  .popup-card svg{ width:100%; height:130px; display:block; border-radius:14px 14px 0 0; }
+  .popup-body{ padding:14px 16px 16px 16px; }
+  .cat-pill{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11.5px; font-weight:600;
+    padding:3px 10px 3px 8px;
+    border-radius:var(--radius-pill);
+    margin-bottom:9px;
+  }
+  .cat-pill .dot{ width:7px; height:7px; border-radius:50%; }
+  .cat-no-ramp{ background:var(--red-tint); color:#8f1f23; }
+  .cat-broken{ background:var(--amber-tint); color:#8a5c08; }
+  .cat-blocked{ background:var(--slate-tint); color:#3d4b53; }
+  .cat-resolved{ background:var(--green-tint); color:#2c5c3d; }
+  .popup-body h3{ font-size:14.5px; font-weight:600; margin:0 0 4px 0; line-height:1.3; }
+  .popup-body .addr{ font-size:12.5px; color:var(--ink-soft); margin:0 0 8px 0; }
+  .popup-body .meta{ font-size:11.5px; color:var(--ink-soft); border-top:1px solid var(--line); padding-top:8px; }
+
+  @media (max-width:640px){
+    #topbar{ flex-direction:column; }
+    .brand{ max-width:none; }
+    .counter{ align-self:flex-start; }
+    #legend{ width:calc(100% - 32px); }
+    #reportBtn{ padding:12px 18px; font-size:13.5px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="topbar">
+  <div class="brand">
+    <h1>Карта доступности</h1>
+    <p>Ташкент, демо-данные · сообщения из Telegram-бота</p>
+  </div>
+  <div class="counter">
+    <span class="num" id="pointCount">0</span>
+    <span class="label">точек на карте</span>
+  </div>
+</div>
+
+<aside id="legend">
+  <h2>Категории (нажмите, чтобы скрыть)</h2>
+  <label class="legend-row" data-cat="no-ramp">
+    <input type="checkbox" checked>
+    <span class="swatch sw-no-ramp"></span>
+    <span class="legend-text">Нет пандуса</span>
+    <span class="legend-count"></span>
+  </label>
+  <label class="legend-row" data-cat="broken">
+    <input type="checkbox" checked>
+    <span class="swatch sw-broken"></span>
+    <span class="legend-text">Разбитый тротуар</span>
+    <span class="legend-count"></span>
+  </label>
+  <label class="legend-row" data-cat="blocked">
+    <input type="checkbox" checked>
+    <span class="swatch sw-blocked"></span>
+    <span class="legend-text">Перекрыт проезд</span>
+    <span class="legend-count"></span>
+  </label>
+  <label class="legend-row" data-cat="resolved">
+    <input type="checkbox" checked>
+    <span class="swatch sw-resolved"></span>
+    <span class="legend-text">Устранено</span>
+    <span class="legend-count"></span>
+  </label>
+</aside>
+
+<button id="reportBtn">Сообщить о месте</button>
+
+<div id="modalWrap">
+  <div id="modal">
+    <h3>Как точка попадает на карту</h3>
+    <p>В боевой версии здесь не будет кнопки — вы открываете Telegram-бота, отправляете геолокацию и фото места без пандуса или проезда. После проверки модератором точка появляется на этой карте, доступная всем, включая городские службы.</p>
+    <button id="modalClose">Понятно</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+  // ---------- Sample data (demo only — imitates reports from the bot) ----------
+  const points = [
+    { lat:41.3264, lng:69.2382, cat:'no-ramp', title:'Вход на Чорсу базар только по лестнице', addr:'Базар Чорсу, вход со стороны ул. Навои', date:'2 сентября' },
+    { lat:41.3110, lng:69.2735, cat:'broken',  title:'Плитка тротуара разбита у сквера', addr:'Площадь Мустакиллик, северный вход', date:'30 августа' },
+    { lat:41.3117, lng:69.2795, cat:'resolved',title:'Пандус установили в июле', addr:'Площадь Амира Темура', date:'14 июля' },
+    { lat:41.3140, lng:69.2810, cat:'blocked', title:'Кафе выставило столики на весь тротуар', addr:'ул. Сайилгох (Бродвей)', date:'28 августа' },
+    { lat:41.3117, lng:69.2705, cat:'no-ramp', title:'Подземный переход без пандуса', addr:'Возле телебашни', date:'19 августа' },
+    { lat:41.3131, lng:69.2787, cat:'broken',  title:'Выбоины на тротуаре у театра', addr:'Театр им. Алишера Навои', date:'25 августа' },
+    { lat:41.3160, lng:69.2705, cat:'no-ramp', title:'Съезд к набережной слишком крутой', addr:'Набережная Анхора, у цирка', date:'21 августа' },
+    { lat:41.3105, lng:69.2760, cat:'blocked', title:'Машины заезжают на пешеходную зону', addr:'ТЦ Tashkent City', date:'1 сентября' },
+    { lat:41.3430, lng:69.2880, cat:'no-ramp', title:'Нет пандуса у выхода из метро', addr:'ст. метро Юнусабад', date:'15 августа' },
+    { lat:41.3162, lng:69.2708, cat:'broken',  title:'Разбитый бордюр на переходе', addr:'Ташкентский цирк', date:'22 августа' },
+    { lat:41.3219, lng:69.2494, cat:'blocked', title:'Торговые ряды перекрывают тротуар', addr:'Алайский базар', date:'27 августа' },
+    { lat:41.3200, lng:69.2720, cat:'resolved',title:'Пандус у главного входа — исправлено', addr:'Парк Milliy Bog\u2019', date:'3 августа' },
+    { lat:41.3300, lng:69.2950, cat:'no-ramp', title:'Высокий бордюр без съезда', addr:'ул. Буюк Ипак Йули', date:'17 августа' },
+    { lat:41.2820, lng:69.2050, cat:'broken',  title:'Провалившийся асфальт на переходе', addr:'Массив Чиланзар', date:'12 августа' }
+  ];
+
+  const catLabels = {
+    'no-ramp': 'Нет пандуса',
+    'broken': 'Разбитый тротуар',
+    'blocked': 'Перекрыт проезд',
+    'resolved': 'Устранено'
+  };
+
+  // ---------- Illustrative "photo" placeholders ----------
+  // Stand-ins for real user photos, which the Telegram bot would attach.
+  function illustration(cat){
+    const bg = { 'no-ramp':'#F6DEDD', 'broken':'#F5E7C6', 'blocked':'#E5E9EA', 'resolved':'#DCEBE1' }[cat];
+    const fg = { 'no-ramp':'#C4292E', 'broken':'#B9760A', 'blocked':'#546670', 'resolved':'#3F7D53' }[cat];
+    const scenes = {
+      'no-ramp': `
+        <rect width="160" height="110" fill="${bg}"/>
+        <rect x="30" y="70" width="18" height="14" fill="${fg}"/>
+        <rect x="48" y="58" width="18" height="26" fill="${fg}"/>
+        <rect x="66" y="46" width="18" height="38" fill="${fg}"/>
+        <circle cx="115" cy="72" r="12" fill="none" stroke="${fg}" stroke-width="4"/>
+        <rect x="103" y="60" width="6" height="14" fill="${fg}"/>
+        <line x1="90" y1="90" x2="130" y2="90" stroke="${fg}" stroke-width="3" stroke-dasharray="4 5"/>`,
+      'broken': `
+        <rect width="160" height="110" fill="${bg}"/>
+        <line x1="10" y1="30" x2="150" y2="30" stroke="${fg}" stroke-opacity="0.35" stroke-width="2"/>
+        <line x1="10" y1="55" x2="150" y2="55" stroke="${fg}" stroke-opacity="0.35" stroke-width="2"/>
+        <line x1="10" y1="80" x2="150" y2="80" stroke="${fg}" stroke-opacity="0.35" stroke-width="2"/>
+        <path d="M20 15 L70 45 L55 60 L100 95 L90 100" fill="none" stroke="${fg}" stroke-width="4" stroke-linecap="round"/>`,
+      'blocked': `
+        <rect width="160" height="110" fill="${bg}"/>
+        <g opacity="0.5">
+          <rect x="10" y="70" width="14" height="30" fill="${fg}" transform="skewX(-20)"/>
+          <rect x="40" y="70" width="14" height="30" fill="${fg}" transform="skewX(-20)"/>
+          <rect x="70" y="70" width="14" height="30" fill="${fg}" transform="skewX(-20)"/>
+          <rect x="100" y="70" width="14" height="30" fill="${fg}" transform="skewX(-20)"/>
+        </g>
+        <rect x="45" y="35" width="70" height="24" rx="8" fill="${fg}"/>
+        <rect x="55" y="24" width="45" height="16" rx="6" fill="${fg}"/>
+        <circle cx="60" cy="60" r="7" fill="#fff"/>
+        <circle cx="100" cy="60" r="7" fill="#fff"/>`,
+      'resolved': `
+        <rect width="160" height="110" fill="${bg}"/>
+        <polygon points="30,90 110,90 110,80 45,80" fill="${fg}"/>
+        <circle cx="118" cy="70" r="11" fill="none" stroke="${fg}" stroke-width="4"/>
+        <rect x="107" y="58" width="6" height="12" fill="${fg}"/>
+        <circle cx="128" cy="34" r="16" fill="${fg}"/>
+        <path d="M121 34 L126 40 L136 27" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`
+    };
+    return `<svg viewBox="0 0 160 110" xmlns="http://www.w3.org/2000/svg">${scenes[cat]}</svg>`;
+  }
+
+  // ---------- Map setup ----------
+  const map = L.map('map', { zoomControl:false }).setView([41.312, 69.279], 12);
+  L.control.zoom({ position:'bottomright' }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:19,
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  const layersByCat = { 'no-ramp':L.layerGroup(), 'broken':L.layerGroup(), 'blocked':L.layerGroup(), 'resolved':L.layerGroup() };
+  Object.values(layersByCat).forEach(l => l.addTo(map));
+
+  const counts = { 'no-ramp':0, 'broken':0, 'blocked':0, 'resolved':0 };
+
+  points.forEach((p, i) => {
+    counts[p.cat]++;
+    const icon = L.divIcon({
+      className:'',
+      html:`<div class="pin-wrap" style="animation-delay:${i * 60}ms"><div class="pin pin-${p.cat}"></div></div>`,
+      iconSize:[28,28],
+      iconAnchor:[14,14]
+    });
+    const marker = L.marker([p.lat, p.lng], { icon });
+
+    marker.bindTooltip(
+      `<div class="tip-inner">${illustration(p.cat)}<span class="tip-title">${p.title}</span></div>`,
+      { className:'card-tip', direction:'top', offset:[0,-16] }
+    );
+
+    marker.bindPopup(
+      `<div class="popup-card">
+        ${illustration(p.cat)}
+        <div class="popup-body">
+          <span class="cat-pill cat-${p.cat}"><span class="dot" style="background:currentColor"></span>${catLabels[p.cat]}</span>
+          <h3>${p.title}</h3>
+          <p class="addr">${p.addr}</p>
+          <p class="meta">Сообщено ${p.date} · иллюстрация вместо фото</p>
+        </div>
+      </div>`
+    );
+
+    marker.addTo(layersByCat[p.cat]);
+  });
+
+  document.getElementById('pointCount').textContent = points.length;
+  document.querySelectorAll('.legend-row').forEach(row => {
+    const cat = row.dataset.cat;
+    row.querySelector('.legend-count').textContent = counts[cat];
+    row.addEventListener('click', (e) => {
+      e.preventDefault();
+      const checkbox = row.querySelector('input');
+      checkbox.checked = !checkbox.checked;
+      row.classList.toggle('off', !checkbox.checked);
+      if (checkbox.checked) map.addLayer(layersByCat[cat]);
+      else map.removeLayer(layersByCat[cat]);
+    });
+  });
+
+  // ---------- Modal ----------
+  const modalWrap = document.getElementById('modalWrap');
+  document.getElementById('reportBtn').addEventListener('click', () => modalWrap.classList.add('open'));
+  document.getElementById('modalClose').addEventListener('click', () => modalWrap.classList.remove('open'));
+  modalWrap.addEventListener('click', (e) => { if (e.target === modalWrap) modalWrap.classList.remove('open'); });
+</script>
+</body>
+</html>
