@@ -1,0 +1,53 @@
+/* Просмотр фото при модерации: клик по снимку разворачивает его поверх
+   страницы, не уводя из списка заявок. */
+
+.pandus-thumb { cursor: zoom-in; transition: opacity .12s; }
+.pandus-thumb:hover { opacity: .82; }
+
+#pandus-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 20, 24, .88);
+  cursor: zoom-out;
+}
+#pandus-lightbox.open { display: flex; }
+
+#pandus-lightbox img {
+  max-width: 94vw;
+  max-height: 88vh;
+  border-radius: 6px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+  background: #333;
+}
+
+#pandus-lightbox .pandus-hint {
+  position: absolute;
+  bottom: 18px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, .75);
+  font-size: 13px;
+}
+
+#pandus-lightbox .pandus-close {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  color: #fff;
+  font-size: 30px;
+  line-height: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: .8;
+}
+#pandus-lightbox .pandus-close:hover { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pandus-thumb { transition: none; }
+}

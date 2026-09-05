@@ -80,6 +80,10 @@ class ReportAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "moderated_at", "resolved_at", "updated_at",
                        "photo_preview", "map_link", "reporter", "telegram_message_id")
 
+    class Media:
+        css = {"all": ("reports/lightbox.css",)}
+        js = ("reports/lightbox.js",)
+
     fieldsets = (
         ("Модерация", {
             "fields": ("status", "category", "moderation_notes", "rejected_reason", "moderator"),
@@ -105,22 +109,22 @@ class ReportAdmin(admin.ModelAdmin):
         if not obj.photo_ref:
             return "—"
         return format_html(
-            '<img src="/media/{}/?size=thumb" style="width:64px;height:48px;'
-            'object-fit:cover;border-radius:4px" loading="lazy">', obj.pk,
+            '<img src="/media/{}/?size=thumb" data-full="/media/{}/" '
+            'style="width:72px;height:54px;object-fit:cover;border-radius:4px" '
+            'loading="lazy" title="Нажмите, чтобы рассмотреть">', obj.pk, obj.pk,
         )
 
     @admin.display(description="Фото места")
     def photo_preview(self, obj):
         if not obj.photo_ref:
             return "Фото не приложено"
-        # Ссылка на оригинал: детали вроде высоты бордюра на превью не разглядеть
+        # Детали вроде высоты бордюра на уменьшенном снимке не разглядеть,
+        # поэтому клик разворачивает фото на весь экран.
         return format_html(
-            '<a href="/media/{}/" target="_blank" rel="noopener" '
-            'title="Открыть в полном размере">'
-            '<img src="/media/{}/" style="max-width:100%;width:900px;'
-            'border-radius:8px;display:block"></a>'
+            '<img src="/media/{}/" data-full="/media/{}/" '
+            'style="max-width:100%;width:900px;border-radius:8px;display:block">'
             '<p style="margin:6px 0 0;color:#666;font-size:12px">'
-            'Нажмите на фото, чтобы открыть оригинал в новой вкладке</p>',
+            'Нажмите на фото, чтобы рассмотреть его целиком</p>',
             obj.pk, obj.pk,
         )
 
