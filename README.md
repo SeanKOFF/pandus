@@ -19,12 +19,15 @@
 ## Статус проекта
 
 Стадия проектирования. Собраны:
-- [x] Демо карты на Leaflet/OSM с примерными точками — `map-demo/index.html`
-- [x] Схема БД (категории, репорты, история статусов) — `db/schema.sql`
-- [ ] Backend API
-- [ ] Админ-панель для модерации
-- [ ] Telegram-бот
-- [ ] Загрузка и раздача фото (через OneDrive)
+- [x] Схема БД (категории, заявки, история статусов)
+- [x] Backend на Django + публичный API (`/api/points/`, `/api/categories/`)
+- [x] Админ-панель модерации с превью фото и действиями по статусам
+- [x] Telegram-бот приёма заявок
+- [x] Карта на Leaflet/OSM, читающая точки из API
+- [x] Локальное хранилище фото + прокси `/media/<id>/`
+- [ ] Хранилище OneDrive (интерфейс готов, backend — заглушка)
+- [ ] Уведомление автора заявки о публикации / устранении
+- [ ] Развёртывание на сервере
 
 Подробности решений — в `docs/architecture.md`.
 
@@ -38,13 +41,46 @@
 - **Хранилище фото:** OneDrive (через Microsoft Graph API), отдаётся
   через собственный backend-прокси, а не прямой ссылкой
 
-## Локальный запуск демо карты
-
-Демо-карта — статический файл, бэкенда не требует:
+## Локальный запуск
 
 ```bash
-open map-demo/index.html   # или просто открыть файл в браузере
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env          # впишите TELEGRAM_BOT_TOKEN
+
+USE_SQLITE=1 python manage.py migrate
+USE_SQLITE=1 python manage.py createsuperuser
+USE_SQLITE=1 python manage.py runserver
 ```
 
-Данные на карте сейчас — тестовые (заглушки вместо реальных фото),
-после подключения backend API карта будет получать точки оттуда.
+В отдельной вкладке терминала — бот:
+
+```bash
+source .venv/bin/activate
+USE_SQLITE=1 python manage.py bot
+```
+
+`USE_SQLITE=1` позволяет работать без поднятого PostgreSQL. Для боевого
+режима уберите переменную и заполните `DB_*` в `.env`.
+
+| Адрес | Что это |
+|---|---|
+| http://127.0.0.1:8000/ | Публичная карта |
+| http://127.0.0.1:8000/admin/ | Админка модерации |
+| http://127.0.0.1:8000/api/points/ | Точки для карты (JSON) |
+| http://127.0.0.1:8000/api/categories/ | Категории для легенды |
+
+## Структура
+
+```
+config/          настройки и корневые URL
+reports/
+  models.py      Category, Reporter, Report, ReportStatusHistory
+  admin.py       админка модерации
+  views.py       публичный API, прокси фото, страница карты
+  storage.py     абстракция хранилища (local / onedrive)
+  templates/     карта на Leaflet
+  management/commands/bot.py   Telegram-бот
+db/schema.sql    исходная SQL-схема (справочно, источник истины — модели)
+```

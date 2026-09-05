@@ -25,3 +25,4 @@ dist/
 *.log
 db.sqlite3
 staticfiles/
+photos/

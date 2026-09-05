@@ -152,3 +152,8 @@ ONEDRIVE_FOLDER = os.environ.get("ONEDRIVE_FOLDER", "pandus")
 
 # --- Telegram ---
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+
+# --- Хранилище фотографий ---
+# local | onedrive
+PHOTO_STORAGE = os.environ.get("PHOTO_STORAGE", "local")
+PHOTO_LOCAL_ROOT = BASE_DIR / "photos"   # вне static/, наружу не раздаётся

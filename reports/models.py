@@ -3,6 +3,13 @@ from django.db import models
 from django.utils import timezone
 
 
+def default_photo_storage():
+    """Умолчание берётся из настроек, а не зашито в модель, — иначе
+    заявка, созданная вручную в админке, уедет в неподключённое хранилище."""
+    from django.conf import settings
+    return settings.PHOTO_STORAGE
+
+
 class Category(models.Model):
     """Категория проблемы. Хранится в БД, а не в коде, — новую категорию
     модератор добавляет через админку, без деплоя."""
@@ -79,7 +86,7 @@ class Report(models.Model):
     # Не прямая ссылка, а идентификатор объекта в хранилище (OneDrive item id).
     # Фото отдаётся через собственный прокси-эндпоинт, поэтому неопубликованные
     # снимки недоступны снаружи, а смена хранилища не ломает ссылки в базе.
-    photo_storage = models.CharField("Хранилище", max_length=20, default="onedrive")
+    photo_storage = models.CharField("Хранилище", max_length=20, default=default_photo_storage)
     photo_ref = models.TextField("Ссылка на фото в хранилище")
     resolved_photo_ref = models.TextField("Фото после устранения", blank=True)
 

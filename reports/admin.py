@@ -105,16 +105,23 @@ class ReportAdmin(admin.ModelAdmin):
         if not obj.photo_ref:
             return "—"
         return format_html(
-            '<img src="/media/{}/" style="width:64px;height:48px;object-fit:cover;'
-            'border-radius:4px" loading="lazy">', obj.pk,
+            '<img src="/media/{}/?size=thumb" style="width:64px;height:48px;'
+            'object-fit:cover;border-radius:4px" loading="lazy">', obj.pk,
         )
 
     @admin.display(description="Фото места")
     def photo_preview(self, obj):
         if not obj.photo_ref:
             return "Фото не приложено"
+        # Ссылка на оригинал: детали вроде высоты бордюра на превью не разглядеть
         return format_html(
-            '<img src="/media/{}/" style="max-width:520px;border-radius:8px">', obj.pk,
+            '<a href="/media/{}/" target="_blank" rel="noopener" '
+            'title="Открыть в полном размере">'
+            '<img src="/media/{}/" style="max-width:100%;width:900px;'
+            'border-radius:8px;display:block"></a>'
+            '<p style="margin:6px 0 0;color:#666;font-size:12px">'
+            'Нажмите на фото, чтобы открыть оригинал в новой вкладке</p>',
+            obj.pk, obj.pk,
         )
 
     @admin.display(description="Статус")

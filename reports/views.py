@@ -5,10 +5,12 @@
 явно в _serialize(), а не сериализацией модели целиком.
 """
 
-from django.http import JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
+from django.shortcuts import render
 from django.views.decorators.http import require_GET
 
 from .models import Category, Report
+from .storage import FULL, THUMB, get_storage
 
 
 def _serialize(report):
@@ -23,6 +25,7 @@ def _serialize(report):
         "address": report.address_hint,
         "description": report.description,
         "photo_url": f"/media/{report.id}/" if report.photo_ref else None,
+        "photo_thumb_url": f"/media/{report.id}/?size=thumb" if report.photo_ref else None,
         "created_at": report.created_at.isoformat(),
         "resolved_at": report.resolved_at.isoformat() if report.resolved_at else None,
     }
@@ -69,3 +72,40 @@ def public_categories(request):
             for c in qs
         ]
     })
+
+
+@require_GET
+def photo(request, report_id):
+    """GET /media/<report_id>/ — прокси к хранилищу фотографий.
+
+    Фото неопубликованной заявки отдаётся только залогиненному
+    сотруднику (для превью в админке). Публике видны снимки
+    только опубликованных и устранённых точек.
+    """
+    try:
+        report = Report.objects.get(pk=report_id)
+    except Report.DoesNotExist:
+        raise Http404
+
+    if not report.is_public and not request.user.is_staff:
+        raise Http404
+
+    if not report.photo_ref:
+        raise Http404
+
+    variant = THUMB if request.GET.get("size") == "thumb" else FULL
+    try:
+        data = get_storage(report.photo_storage).fetch(report.photo_ref, variant)
+    except (FileNotFoundError, ValueError, NotImplementedError):
+        raise Http404
+
+    import io
+    response = FileResponse(io.BytesIO(data), content_type="image/jpeg")
+    response["Cache-Control"] = "private, max-age=3600" if not report.is_public else "public, max-age=86400"
+    return response
+
+
+def map_page(request):
+    """GET / — публичная карта. Отдаётся с того же домена, что и API,
+    поэтому CORS не нужен."""
+    return render(request, "reports/map.html")
