@@ -19,9 +19,9 @@ STATUS_COLORS = {
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("label_ru", "code", "color_swatch", "sort_order", "is_active", "report_count")
+    list_display = ("label_ru", "label_uz", "code", "color_swatch", "sort_order", "is_active", "report_count")
     list_editable = ("sort_order", "is_active")
-    search_fields = ("label_ru", "code")
+    search_fields = ("label_ru", "label_uz", "code")
 
     @admin.display(description="Цвет")
     def color_swatch(self, obj):
@@ -38,8 +38,8 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Reporter)
 class ReporterAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "telegram_user_id", "is_blocked", "report_count", "first_seen_at")
-    list_filter = ("is_blocked",)
+    list_display = ("__str__", "telegram_user_id", "language", "is_blocked", "report_count", "first_seen_at")
+    list_filter = ("is_blocked", "language")
     search_fields = ("telegram_username", "telegram_user_id")
     actions = ("block", "unblock")
 

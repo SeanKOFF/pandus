@@ -28,6 +28,7 @@ from aiogram.types import (
     KeyboardButton, Message, ReplyKeyboardMarkup, ReplyKeyboardRemove,
 )
 
+from reports.bot_texts import t
 from reports.models import Category, Report, Reporter
 from reports.storage import get_storage
 
@@ -60,6 +61,13 @@ def get_or_create_reporter(tg_user):
 @sync_to_async
 def active_categories():
     return list(Category.objects.filter(is_active=True))
+
+
+@sync_to_async
+def set_language(reporter, lang):
+    reporter.language = lang
+    reporter.language_chosen = True
+    reporter.save(update_fields=["language", "language_chosen"])
 
 
 @sync_to_async
@@ -99,40 +107,48 @@ def rate_limit_exceeded(reporter):
 
     from django.utils import timezone as tz
 
+    lang = reporter.language
     now = tz.now()
     per_hour = reporter.reports.filter(created_at__gte=now - timedelta(hours=1)).count()
     if per_hour >= settings.REPORTS_PER_HOUR:
-        return f"Вы отправили {per_hour} заявок за последний час. Продолжить можно позже."
+        return t("limit_hour", lang, n=per_hour)
 
     per_day = reporter.reports.filter(created_at__gte=now - timedelta(days=1)).count()
     if per_day >= settings.REPORTS_PER_DAY:
-        return f"Вы отправили {per_day} заявок за сутки. Продолжить можно завтра."
+        return t("limit_day", lang, n=per_day)
 
     return None
 
 
 # --- Клавиатуры ----------------------------------------------------
 
-def location_kb():
+def location_kb(lang):
     return ReplyKeyboardMarkup(
-        keyboard=[[KeyboardButton(text="📍 Отправить геолокацию", request_location=True)]],
+        keyboard=[[KeyboardButton(text=t("send_location_btn", lang), request_location=True)]],
         resize_keyboard=True,
         one_time_keyboard=True,
     )
 
 
-def categories_kb(categories):
+def categories_kb(categories, lang):
     rows = [
-        [InlineKeyboardButton(text=c.label_ru, callback_data=f"cat:{c.id}")]
+        [InlineKeyboardButton(text=c.label(lang), callback_data=f"cat:{c.id}")]
         for c in categories
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-def skip_kb():
+def skip_kb(lang):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Пропустить", callback_data="skip_desc")]
+        [InlineKeyboardButton(text=t("skip_btn", lang), callback_data="skip_desc")]
     ])
+
+
+def language_kb():
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="Русский", callback_data="lang:ru"),
+        InlineKeyboardButton(text="O‘zbekcha", callback_data="lang:uz"),
+    ]])
 
 
 # --- Хендлеры ------------------------------------------------------
@@ -144,106 +160,121 @@ dp = Dispatcher(storage=MemoryStorage())
 async def cmd_start(message: Message, state: FSMContext):
     reporter = await get_or_create_reporter(message.from_user)
     if reporter.is_blocked:
-        await message.answer("Приём заявок с этого аккаунта приостановлен.")
+        await message.answer(t("blocked", reporter.language))
         return
 
-    await state.clear()
-    await state.set_state(Flow.waiting_location)
     limit_msg = await rate_limit_exceeded(reporter)
     if limit_msg:
         await message.answer(limit_msg)
         return
 
-    await message.answer(
-        "Здесь можно сообщить о месте, где нет условий для проезда: "
-        "отсутствует пандус, разбит тротуар, перекрыт проход.\n\n"
-        "Что важно знать: присланные фотографии и координаты места "
-        "публикуются на открытой карте города — их увидит любой человек. "
-        "Ваше имя и контакты не публикуются. Если позже захотите убрать "
-        "свою заявку с карты, напишите /delete.\n\n"
-        "Отправляя заявку, вы соглашаетесь с публикацией фотографии.\n\n"
-        "Шаг 1 из 3. Отправьте геолокацию места — кнопкой ниже "
-        "или через скрепку → «Геопозиция».",
-        reply_markup=location_kb(),
-    )
+    await state.clear()
+
+    # При первом обращении сначала спрашиваем язык, дальше он запоминается
+    if not reporter.language_chosen:
+        await message.answer(t("choose_language", reporter.language),
+                             reply_markup=language_kb())
+        return
+
+    await begin_flow(message, state, reporter.language)
+
+
+async def begin_flow(message: Message, state: FSMContext, lang: str):
+    await state.update_data(lang=lang)
+    await state.set_state(Flow.waiting_location)
+    await message.answer(t("intro", lang), reply_markup=location_kb(lang))
+
+
+@dp.message(Command("lang"))
+async def cmd_lang(message: Message, state: FSMContext):
+    reporter = await get_or_create_reporter(message.from_user)
+    await message.answer(t("choose_language", reporter.language),
+                         reply_markup=language_kb())
+
+
+@dp.callback_query(F.data.startswith("lang:"))
+async def pick_language(call: CallbackQuery, state: FSMContext):
+    lang = call.data.split(":")[1]
+    reporter = await get_or_create_reporter(call.from_user)
+    await set_language(reporter, lang)
+    await call.message.edit_reply_markup(reply_markup=None)
+    await call.answer()
+    await call.message.answer(t("language_set", lang))
+    await begin_flow(call.message, state, lang)
+
+
+async def state_lang(state: FSMContext) -> str:
+    """Язык текущего диалога. Хранится в состоянии, а не в глобальной
+    переменной, — иначе одновременные диалоги перебивали бы друг друга."""
+    return (await state.get_data()).get("lang", "ru")
 
 
 @dp.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
+    lang = await state_lang(state)
     await state.clear()
-    await message.answer("Заявка отменена. Чтобы начать заново — /start",
-                         reply_markup=ReplyKeyboardRemove())
+    await message.answer(t("cancelled", lang), reply_markup=ReplyKeyboardRemove())
 
 
 @dp.message(Command("my"))
 async def cmd_my(message: Message):
     reporter = await get_or_create_reporter(message.from_user)
     total = await count_user_reports(reporter)
-    await message.answer(f"Вы отправили заявок: {total}")
+    await message.answer(t("my_reports", reporter.language, count=total))
 
 
 @dp.message(Command("delete"))
 async def cmd_delete(message: Message):
-    await message.answer(
-        "Чтобы убрать заявку с карты, пришлите её номер и короткое пояснение "
-        "сюда: заявки снимает модератор вручную.\n\n"
-        "Посмотреть свои заявки: /my"
-    )
+    reporter = await get_or_create_reporter(message.from_user)
+    await message.answer(t("delete_info", reporter.language))
 
 
 @dp.message(Flow.waiting_location, F.location)
 async def got_location(message: Message, state: FSMContext):
     await state.update_data(lat=message.location.latitude, lng=message.location.longitude)
     await state.set_state(Flow.waiting_photo)
-    await message.answer(
-        "Шаг 2 из 3. Теперь пришлите фотографию места.\n\n"
-        "Снимайте так, чтобы в кадр не попадали лица людей, "
-        "номера автомобилей и таблички с адресами квартир — "
-        "фотография будет опубликована открыто.",
-        reply_markup=ReplyKeyboardRemove(),
-    )
+    await message.answer(t("ask_photo", await state_lang(state)),
+                         reply_markup=ReplyKeyboardRemove())
 
 
 @dp.message(Flow.waiting_location)
-async def need_location(message: Message):
-    await message.answer("Нужна геолокация места. Нажмите кнопку ниже или отправьте "
-                         "точку через скрепку → «Геопозиция».",
-                         reply_markup=location_kb())
+async def need_location(message: Message, state: FSMContext):
+    lang = await state_lang(state)
+    await message.answer(t("need_location", lang), reply_markup=location_kb(lang))
 
 
 @dp.message(Flow.waiting_photo, F.photo)
 async def got_photo(message: Message, state: FSMContext, bot: Bot):
+    lang = await state_lang(state)
     photo = message.photo[-1]  # максимальное доступное разрешение
     if photo.file_size and photo.file_size > MAX_PHOTO_BYTES:
-        await message.answer("Файл слишком большой. Пришлите снимок поменьше.")
+        await message.answer(t("photo_too_big", lang))
         return
 
-    await message.answer("Загружаю фото…")
+    await message.answer(t("uploading", lang))
     buffer = await bot.download(photo.file_id)
     try:
         ref, storage_name = await save_photo(buffer.read())
     except OSError:
-        await message.answer("Не удалось обработать изображение. "
-                             "Попробуйте прислать другой снимок.")
+        await message.answer(t("photo_broken", lang))
         return
 
     await state.update_data(photo_ref=ref, storage=storage_name, message_id=message.message_id)
     await state.set_state(Flow.waiting_category)
 
     categories = await active_categories()
-    await message.answer("Шаг 3 из 3. Выберите, в чём проблема:",
-                         reply_markup=categories_kb(categories))
+    await message.answer(t("ask_category", lang),
+                         reply_markup=categories_kb(categories, lang))
 
 
 @dp.message(Flow.waiting_photo, F.document)
-async def photo_as_document(message: Message):
-    await message.answer("Пришлите снимок именно как фото, а не файлом — "
-                         "так он корректно отобразится на карте.")
+async def photo_as_document(message: Message, state: FSMContext):
+    await message.answer(t("photo_as_document", await state_lang(state)))
 
 
 @dp.message(Flow.waiting_photo)
-async def need_photo(message: Message):
-    await message.answer("Нужна фотография места. Пришлите снимок или отмените заявку: /cancel")
+async def need_photo(message: Message, state: FSMContext):
+    await message.answer(t("need_photo", await state_lang(state)))
 
 
 @dp.callback_query(Flow.waiting_category, F.data.startswith("cat:"))
@@ -252,11 +283,8 @@ async def got_category(call: CallbackQuery, state: FSMContext):
     await state.set_state(Flow.waiting_description)
     await call.message.edit_reply_markup(reply_markup=None)
     await call.answer()
-    await call.message.answer(
-        "Добавьте короткое описание — ориентир, адрес, детали. "
-        "Или пропустите этот шаг.",
-        reply_markup=skip_kb(),
-    )
+    lang = await state_lang(state)
+    await call.message.answer(t("ask_description", lang), reply_markup=skip_kb(lang))
 
 
 async def _finish(target_message, state, from_user, description):
@@ -266,12 +294,9 @@ async def _finish(target_message, state, from_user, description):
         reporter, data["category_id"], data["lat"], data["lng"],
         data["photo_ref"], data["storage"], description, data.get("message_id"),
     )
+    lang = data.get("lang", "ru")
     await state.clear()
-    await target_message.answer(
-        f"Заявка №{report_id} принята и отправлена на проверку.\n\n"
-        "После одобрения модератором точка появится на карте города. "
-        "Чтобы сообщить о другом месте — /start"
-    )
+    await target_message.answer(t("accepted", lang, id=report_id))
 
 
 @dp.callback_query(Flow.waiting_description, F.data == "skip_desc")
@@ -288,7 +313,8 @@ async def got_description(message: Message, state: FSMContext):
 
 @dp.message()
 async def fallback(message: Message):
-    await message.answer("Чтобы сообщить о проблемном месте, начните с команды /start")
+    reporter = await get_or_create_reporter(message.from_user)
+    await message.answer(t("fallback", reporter.language))
 
 
 class Command(BaseCommand):

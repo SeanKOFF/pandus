@@ -15,7 +15,8 @@ class Category(models.Model):
     модератор добавляет через админку, без деплоя."""
 
     code = models.SlugField("Код", max_length=50, unique=True)
-    label_ru = models.CharField("Название", max_length=100)
+    label_ru = models.CharField("Название (рус)", max_length=100)
+    label_uz = models.CharField("Название (узб)", max_length=100, blank=True)
     color_hex = models.CharField("Цвет на карте", max_length=7, default="#546670")
     sort_order = models.IntegerField("Порядок", default=0)
     is_active = models.BooleanField("Активна", default=True)
@@ -29,6 +30,16 @@ class Category(models.Model):
     def __str__(self):
         return self.label_ru
 
+    def label(self, lang=None):
+        """Название на нужном языке. Если узбекского перевода нет,
+        показываем русский, а не пустую строку."""
+        from django.utils.translation import get_language
+
+        lang = lang or get_language() or "ru"
+        if lang.startswith("uz") and self.label_uz:
+            return self.label_uz
+        return self.label_ru
+
 
 class Reporter(models.Model):
     """Автор заявки из Telegram. Нужен для антиспама и чтобы уведомить
@@ -36,6 +47,9 @@ class Reporter(models.Model):
 
     telegram_user_id = models.BigIntegerField("Telegram ID", unique=True)
     telegram_username = models.CharField("Username", max_length=100, blank=True)
+    language = models.CharField("Язык", max_length=5, default="ru",
+                                choices=[("ru", "Русский"), ("uz", "O‘zbekcha")])
+    language_chosen = models.BooleanField("Язык выбран", default=False)
     is_blocked = models.BooleanField("Заблокирован", default=False)
     first_seen_at = models.DateTimeField(auto_now_add=True)
 

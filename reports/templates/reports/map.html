@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru">
+{% load i18n %}
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Карта доступности — демо</title>
+<title>{% translate "Карта доступности" %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -41,7 +42,7 @@
 
   /* ---------- Top bar ---------- */
   #topbar{
-    position:absolute; top:16px; left:16px; right:16px;
+    position:absolute; top:16px; left:16px; right:96px;
     z-index:500;
     display:flex; align-items:flex-start; justify-content:space-between;
     gap:12px;
@@ -283,6 +284,26 @@
   .pin::after{ animation:none; }
   .pin.pin-pulse::after{ animation:ring 2.4s ease-out infinite; }
 
+  #langSwitch{
+    position:absolute; right:16px; top:16px;
+    z-index:500;
+    display:flex; gap:2px;
+    background:var(--bg-panel);
+    border-radius:var(--radius-pill);
+    box-shadow:var(--shadow);
+    padding:4px;
+  }
+  #langSwitch a{
+    padding:5px 11px;
+    border-radius:var(--radius-pill);
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    text-decoration:none;
+  }
+  #langSwitch a.active{ background:var(--teal); color:#fff; }
+  #langSwitch a:focus-visible{ outline:2px solid var(--teal); outline-offset:2px; }
+
   @media (max-width:640px){
     #topbar{ flex-direction:column; }
     .brand{ max-width:none; }
@@ -299,33 +320,43 @@
 
 <div id="topbar">
   <div class="brand">
-    <h1>Карта доступности</h1>
-    <p>Места, о которых сообщили жители через Telegram-бота</p>
+    <h1>{% translate "Карта доступности" %}</h1>
+    <p>{% translate "Места, о которых сообщили жители через Telegram-бота" %}</p>
   </div>
   <div class="counter">
     <span class="num" id="pointCount">0</span>
-    <span class="label">точек на карте</span>
+    <span class="label">{% translate "точек на карте" %}</span>
   </div>
 </div>
 
 <aside id="legend">
-  <h2>Категории (нажмите, чтобы скрыть)</h2>
+  <h2>{% translate "Категории (нажмите, чтобы скрыть)" %}</h2>
   <div id="legendRows"></div>
 </aside>
 
-<button id="reportBtn">Сообщить о месте</button>
+<button id="reportBtn">{% translate "Сообщить о месте" %}</button>
+
+<nav id="langSwitch" aria-label="{% translate "Язык" %}">
+  {% get_current_language as CUR %}
+  <a href="?lang=ru" class="{% if CUR == 'ru' %}active{% endif %}">RU</a>
+  <a href="?lang=uz" class="{% if CUR == 'uz' %}active{% endif %}">UZ</a>
+</nav>
 
 <div id="modalWrap">
   <div id="modal">
-    <h3>Как точка попадает на карту</h3>
-    <p>В боевой версии здесь не будет кнопки — вы открываете Telegram-бота, отправляете геолокацию и фото места без пандуса или проезда. После проверки модератором точка появляется на этой карте, доступная всем, включая городские службы.</p>
-    <button id="modalClose">Понятно</button>
+    <h3>{% translate "Как точка попадает на карту" %}</h3>
+    <p>{% translate "Откройте Telegram-бота, отправьте геолокацию и фото места без пандуса или проезда. После проверки модератором точка появится на этой карте — её увидят все, включая городские службы." %}</p>
+    <button id="modalClose">{% translate "Понятно" %}</button>
   </div>
 </div>
 
+{{ js_strings|json_script:"i18n-strings" }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
   // ---------- Загрузка данных из API ----------
+
+  const S = JSON.parse(document.getElementById('i18n-strings').textContent);
+  const LOCALE = document.documentElement.lang === 'uz' ? 'uz-UZ' : 'ru-RU';
 
   const STATUS_RESOLVED = 'resolved';
   const RESOLVED_COLOR = '#3F7D53';
@@ -348,7 +379,7 @@
 
   function formatDate(iso){
     if (!iso) return '';
-    return new Date(iso).toLocaleDateString('ru-RU', { day:'numeric', month:'long' });
+    return new Date(iso).toLocaleDateString(LOCALE, { day:'numeric', month:'long' });
   }
 
   function pointColor(p){
@@ -358,10 +389,10 @@
   function photoBlock(p, thumb){
     const url = thumb ? p.photo_thumb_url : p.photo_url;
     if (!url) {
-      return '<div class="no-photo">Фото не приложено</div>';
+      return `<div class="no-photo">${S.no_photo}</div>`;
     }
     return `<img src="${escapeHtml(url)}" alt="" loading="lazy"
-              onerror="this.outerHTML='<div class=\'no-photo\'>Фото недоступно</div>'">`;
+              onerror="this.outerHTML='<div class=\'no-photo\'>'+S.photo_unavailable+'</div>'">`;
   }
 
   function makeMarker(p, index){
@@ -384,7 +415,7 @@
     );
 
     const resolvedNote = p.status === STATUS_RESOLVED
-      ? `<p class="meta">Устранено ${formatDate(p.resolved_at)}</p>`
+      ? `<p class="meta">${S.resolved} ${formatDate(p.resolved_at)}</p>`
       : '';
 
     marker.bindPopup(
@@ -396,7 +427,7 @@
           </span>
           <h3>${title}</h3>
           ${p.description ? `<p class="addr">${escapeHtml(p.description)}</p>` : ''}
-          <p class="meta">Сообщено ${formatDate(p.created_at)}</p>
+          <p class="meta">${S.reported} ${formatDate(p.created_at)}</p>
           ${resolvedNote}
         </div>
       </div>`
@@ -432,13 +463,13 @@
   }
 
   async function load(){
-    setStatus('Загружаем точки…');
+    setStatus(S.loading);
     try {
       const [catsRes, pointsRes] = await Promise.all([
         fetch('/api/categories/'),
         fetch('/api/points/')
       ]);
-      if (!catsRes.ok || !pointsRes.ok) throw new Error('Сервер вернул ошибку');
+      if (!catsRes.ok || !pointsRes.ok) throw new Error('api error');
 
       const cats = (await catsRes.json()).categories;
       const data = await pointsRes.json();
@@ -454,7 +485,7 @@
       document.getElementById('pointCount').textContent = data.count;
 
       if (data.count === 0) {
-        setStatus('Пока ни одной опубликованной точки. Отправьте место через бота — после проверки оно появится здесь.');
+        setStatus(S.empty);
       } else {
         setStatus('');
         const bounds = L.latLngBounds(data.points.map(p => [p.lat, p.lng]));
@@ -462,7 +493,7 @@
       }
     } catch (err) {
       console.error(err);
-      setStatus('Не удалось загрузить точки. Проверьте, запущен ли сервер, и обновите страницу.');
+      setStatus(S.error);
     }
   }
 

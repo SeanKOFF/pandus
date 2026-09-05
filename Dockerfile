@@ -5,7 +5,7 @@ ENV PYTHONUNBUFFERED=1 \
 
 # libpq — для psycopg, остальное нужно Pillow для JPEG
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libpq5 libjpeg62-turbo zlib1g \
+        libpq5 libjpeg62-turbo zlib1g gettext \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

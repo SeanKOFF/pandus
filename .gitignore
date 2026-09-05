@@ -26,3 +26,6 @@ dist/
 db.sqlite3
 staticfiles/
 photos/
+
+# Скомпилированные переводы — собираются при старте
+*.mo

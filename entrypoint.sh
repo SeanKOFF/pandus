@@ -19,6 +19,8 @@ done
 if [ "$1" = "gunicorn" ]; then
   echo "Применяем миграции…"
   python manage.py migrate --noinput
+  echo "Компилируем переводы…"
+  python manage.py compilemessages 2>/dev/null || true
   echo "Собираем статику…"
   python manage.py collectstatic --noinput
 fi

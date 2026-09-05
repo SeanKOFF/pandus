@@ -5,8 +5,11 @@
 явно в _serialize(), а не сериализацией модели целиком.
 """
 
+from django.conf import settings
 from django.http import FileResponse, Http404, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.utils import translation
+from django.utils.translation import gettext as _
 from django.views.decorators.http import require_GET
 
 from .models import Category, Report
@@ -19,7 +22,7 @@ def _serialize(report):
         "lat": report.lat,
         "lng": report.lng,
         "category": report.category.code,
-        "category_label": report.category.label_ru,
+        "category_label": report.category.label(),
         "color": report.category.color_hex,
         "status": report.status,
         "address": report.address_hint,
@@ -65,7 +68,7 @@ def public_categories(request):
         "categories": [
             {
                 "code": c.code,
-                "label": c.label_ru,
+                "label": c.label(),
                 "color": c.color_hex,
                 "count": c.reports.filter(status__in=Report.PUBLIC_STATUSES).count(),
             }
@@ -107,5 +110,30 @@ def photo(request, report_id):
 
 def map_page(request):
     """GET / — публичная карта. Отдаётся с того же домена, что и API,
-    поэтому CORS не нужен."""
-    return render(request, "reports/map.html")
+    поэтому CORS не нужен.
+
+    ?lang=uz переключает язык и запоминает выбор в cookie, чтобы при
+    следующем заходе человек попал сразу на свою версию.
+    """
+    lang = request.GET.get("lang")
+    if lang in dict(settings.LANGUAGES):
+        response = redirect("map")
+        response.set_cookie(
+            settings.LANGUAGE_COOKIE_NAME, lang,
+            max_age=365 * 24 * 3600, samesite="Lax",
+        )
+        return response
+
+    # Строки для JavaScript: в шаблоне их не собрать, а дублировать
+    # переводы в JS-коде значило бы вести два словаря вместо одного
+    js_strings = {
+        "loading": _("Загружаем точки…"),
+        "empty": _("Пока ни одной опубликованной точки. Отправьте место через бота — "
+                   "после проверки оно появится здесь."),
+        "error": _("Не удалось загрузить точки. Обновите страницу."),
+        "no_photo": _("Фото не приложено"),
+        "photo_unavailable": _("Фото недоступно"),
+        "reported": _("Сообщено"),
+        "resolved": _("Устранено"),
+    }
+    return render(request, "reports/map.html", {"js_strings": js_strings})
