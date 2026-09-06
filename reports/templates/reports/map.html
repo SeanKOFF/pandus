@@ -284,6 +284,15 @@
   .pin::after{ animation:none; }
   .pin.pin-pulse::after{ animation:ring 2.4s ease-out infinite; }
 
+  .leaflet-control-attribution{
+    background:rgba(251,251,249,0.78);
+    padding:1px 6px;
+    border-radius:var(--radius-pill) 0 0 0;
+    font-size:10.5px;
+    color:var(--ink-soft);
+  }
+  .leaflet-control-attribution a{ color:var(--ink-soft); }
+
   #langSwitch{
     position:absolute; right:16px; top:16px;
     z-index:500;
@@ -361,11 +370,21 @@
   const STATUS_RESOLVED = 'resolved';
   const RESOLVED_COLOR = '#3F7D53';
 
-  const map = L.map('map', { zoomControl:false }).setView([41.311, 69.279], 12);
+  const map = L.map('map', {
+    zoomControl: false,
+    // Убирает подпись «Leaflet» — его лицензия упоминания не требует.
+    // Атрибуция OpenStreetMap остаётся: данные под ODbL, указание
+    // авторства обязательно по лицензии и правилам тайлового сервера.
+    attributionControl: false
+  }).setView([41.311, 69.279], 12);
+
   L.control.zoom({ position:'bottomright' }).addTo(map);
+  L.control.attribution({ position:'bottomright', prefix: false })
+    .addAttribution('<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>')
+    .addTo(map);
+
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom:19,
-    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    maxZoom: 19
   }).addTo(map);
 
   const layers = {};          // code -> L.layerGroup
