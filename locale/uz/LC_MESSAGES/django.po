@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-06 00:10+0500\n"
+"POT-Creation-Date: 2026-09-06 11:31+0500\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,42 +17,51 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-#: reports/templates/reports/map.html:7 reports/templates/reports/map.html:323
+
+#: reports/templates/reports/map.html:7 reports/templates/reports/map.html:448
 msgid "Карта доступности"
 msgstr "Qulaylik xaritasi"
 
-#: reports/templates/reports/map.html:324
+#: reports/templates/reports/map.html:449
 msgid "Места, о которых сообщили жители через Telegram-бота"
 msgstr "Aholi Telegram-bot orqali xabar bergan joylar"
 
-#: reports/templates/reports/map.html:328
+#: reports/templates/reports/map.html:453
 msgid "точек на карте"
 msgstr "xaritadagi nuqtalar"
 
-#: reports/templates/reports/map.html:333
-msgid "Категории (нажмите, чтобы скрыть)"
-msgstr "Toifalar (yashirish uchun bosing)"
-
-#: reports/templates/reports/map.html:337
-msgid "Сообщить о месте"
-msgstr "Joy haqida xabar berish"
-
-#: reports/templates/reports/map.html:339
+#: reports/templates/reports/map.html:457
 msgid "Язык"
 msgstr "Til"
 
-#: reports/templates/reports/map.html:347
+#: reports/templates/reports/map.html:466
+msgid "Категории"
+msgstr "Toifalar"
+
+#: reports/templates/reports/map.html:470
+msgid "Нажмите, чтобы скрыть"
+msgstr "Yashirish uchun bosing"
+
+#: reports/templates/reports/map.html:475
+msgid "Сообщить о месте"
+msgstr "Joy haqida xabar berish"
+
+#: reports/templates/reports/map.html:479
 msgid "Как точка попадает на карту"
 msgstr "Nuqta xaritaga qanday tushadi"
 
-#: reports/templates/reports/map.html:348
+#: reports/templates/reports/map.html:480
 msgid ""
 "Откройте Telegram-бота, отправьте геолокацию и фото места без пандуса или "
 "проезда. После проверки модератором точка появится на этой карте — её увидят "
 "все, включая городские службы."
-msgstr "Telegram-botni oching, pandus yoki o‘tish joyi bo‘lmagan joyning geolokatsiyasi va suratini yuboring. Moderator tekshirgach, nuqta shu xaritada paydo bo‘ladi — uni hamma, shu jumladan shahar xizmatlari ham ko‘radi."
+msgstr ""
+"Telegram-botni oching, pandus yoki o‘tish joyi bo‘lmagan joyning "
+"geolokatsiyasi va suratini yuboring. Moderator tekshirgach, nuqta shu "
+"xaritada paydo bo‘ladi — uni hamma, shu jumladan shahar xizmatlari ham "
+"ko‘radi."
 
-#: reports/templates/reports/map.html:349
+#: reports/templates/reports/map.html:481
 msgid "Понятно"
 msgstr "Tushunarli"
 
@@ -64,7 +73,9 @@ msgstr "Nuqtalar yuklanmoqda…"
 msgid ""
 "Пока ни одной опубликованной точки. Отправьте место через бота — после "
 "проверки оно появится здесь."
-msgstr "Hozircha e’lon qilingan nuqtalar yo‘q. Bot orqali joy yuboring — tekshiruvdan so‘ng u shu yerda paydo bo‘ladi."
+msgstr ""
+"Hozircha e’lon qilingan nuqtalar yo‘q. Bot orqali joy yuboring — "
+"tekshiruvdan so‘ng u shu yerda paydo bo‘ladi."
 
 #: reports/views.py:133
 msgid "Не удалось загрузить точки. Обновите страницу."

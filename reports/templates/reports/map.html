@@ -41,52 +41,60 @@
   }
 
   /* ---------- Top bar ---------- */
+  /* Раскладка: верх — карточка и язык, низ — легенда и кнопка.
+     Зум сдвинут выше кнопки, чтобы они не перекрывались. */
   #topbar{
-    position:absolute; top:16px; left:16px; right:96px;
+    position:absolute; top:16px; left:16px; right:16px;
     z-index:500;
     display:flex; align-items:flex-start; justify-content:space-between;
     gap:12px;
     pointer-events:none;
   }
   #topbar > *{ pointer-events:auto; }
+
   .brand{
     background:var(--bg-panel);
     border-radius:var(--radius-card);
     box-shadow:var(--shadow);
-    padding:14px 20px;
-    max-width:340px;
+    padding:12px 16px;
+    display:flex; align-items:center; gap:16px;
+    max-width:min(460px, calc(100% - 90px));
   }
+  .brand-text{ min-width:0; }
   .brand h1{
     font-family:'Space Grotesk', sans-serif;
-    font-size:19px;
+    font-size:18px;
     font-weight:700;
     margin:0 0 2px 0;
     letter-spacing:-0.01em;
   }
   .brand p{
     margin:0;
-    font-size:13px;
+    font-size:12.5px;
+    line-height:1.35;
     color:var(--ink-soft);
   }
   .counter{
-    background:var(--teal);
-    color:#fff;
-    border-radius:var(--radius-card);
-    box-shadow:var(--shadow);
-    padding:12px 20px;
-    text-align:right;
-    min-width:120px;
+    flex:none;
+    text-align:center;
+    padding-left:16px;
+    border-left:1px solid var(--line);
   }
   .counter .num{
     font-family:'Space Grotesk', sans-serif;
-    font-size:28px;
+    font-size:24px;
     font-weight:700;
     line-height:1;
     display:block;
+    color:var(--teal);
   }
   .counter .label{
-    font-size:12px;
-    opacity:0.85;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    display:block;
+    max-width:70px;
+    margin-top:3px;
+    line-height:1.2;
   }
 
   /* ---------- Legend ---------- */
@@ -96,38 +104,46 @@
     background:var(--bg-panel);
     border-radius:var(--radius-card);
     box-shadow:var(--shadow);
-    padding:14px 16px;
     width:230px;
-    font-size:13.5px;
+    overflow:hidden;
   }
-  #legend h2{
-    font-size:13px;
-    font-weight:600;
-    margin:0 0 10px 0;
+  #legendToggle{
+    width:100%;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px;
+    background:none; border:none;
+    padding:12px 16px;
+    font-family:inherit;
+    font-size:13px; font-weight:600;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  #legendToggle svg{ width:12px; height:12px; flex:none; transition:transform .18s; }
+  #legend.collapsed #legendToggle svg{ transform:rotate(-90deg); }
+  #legend.collapsed #legendBody{ display:none; }
+  #legendBody{ padding:0 16px 12px 16px; }
+  .legend-hint{
+    margin:0 0 8px 0;
+    font-size:11px;
     color:var(--ink-soft);
   }
   .legend-row{
     display:flex; align-items:center; gap:9px;
     padding:5px 0;
+    font-size:13.5px;
     cursor:pointer;
     user-select:none;
   }
-  .legend-row input{ display:none; }
   .swatch{
     width:11px; height:11px; border-radius:50%;
     flex:none;
-    box-shadow:0 0 0 3px transparent;
   }
   .legend-row.off .swatch{ opacity:0.25; }
   .legend-row.off .legend-text{ color:var(--ink-soft); text-decoration:line-through; }
   .legend-text{ flex:1; }
   .legend-count{ color:var(--ink-soft); font-variant-numeric:tabular-nums; }
-  .sw-no-ramp{ background:var(--red); }
-  .sw-broken{ background:var(--amber); }
-  .sw-blocked{ background:var(--slate); }
-  .sw-resolved{ background:var(--green); }
 
-  /* ---------- Floating report button ---------- */
+  /* ---------- Кнопка заявки ---------- */
   #reportBtn{
     position:absolute; right:16px; bottom:16px;
     z-index:500;
@@ -136,7 +152,7 @@
     border:none;
     border-radius:var(--radius-pill);
     padding:14px 22px;
-    font-family:'IBM Plex Sans', sans-serif;
+    font-family:inherit;
     font-size:14.5px;
     font-weight:600;
     box-shadow:var(--shadow);
@@ -144,7 +160,39 @@
   }
   #reportBtn:hover{ background:#a92024; }
 
-  /* ---------- Modal ---------- */
+  /* Зум поднимается над кнопкой, атрибуция прижата в самый угол */
+  .leaflet-bottom.leaflet-right .leaflet-control-zoom{ margin-bottom:76px; }
+  .leaflet-control-attribution{
+    background:rgba(251,251,249,0.78);
+    padding:1px 6px;
+    border-radius:var(--radius-pill) 0 0 0;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    margin:0 !important;
+  }
+  .leaflet-control-attribution a{ color:var(--ink-soft); }
+
+  /* ---------- Переключатель языка ---------- */
+  #langSwitch{
+    flex:none;
+    display:flex; gap:2px;
+    background:var(--bg-panel);
+    border-radius:var(--radius-pill);
+    box-shadow:var(--shadow);
+    padding:4px;
+  }
+  #langSwitch a{
+    padding:6px 11px;
+    border-radius:var(--radius-pill);
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    text-decoration:none;
+  }
+  #langSwitch a.active{ background:var(--teal); color:#fff; }
+  #langSwitch a:focus-visible{ outline:2px solid var(--teal); outline-offset:2px; }
+
+  /* ---------- Модальное окно ---------- */
   #modalWrap{
     position:fixed; inset:0; z-index:1000;
     background:rgba(20,28,32,0.45);
@@ -180,6 +228,73 @@
     font-size:14px;
     font-weight:600;
     cursor:pointer;
+  }
+
+  #mapStatus{
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    z-index:400;
+    background:var(--bg-panel);
+    border-radius:var(--radius-card);
+    box-shadow:var(--shadow);
+    padding:16px 22px;
+    max-width:320px;
+    text-align:center;
+    font-size:14px;
+    line-height:1.5;
+    color:var(--ink-soft);
+    display:none;
+  }
+  .no-photo{
+    display:flex; align-items:center; justify-content:center;
+    background:var(--slate-tint);
+    color:var(--ink-soft);
+    font-size:12px;
+  }
+  .tip-inner .no-photo{ width:52px; height:38px; border-radius:6px; flex:none; }
+  .popup-card .no-photo{ height:130px; border-radius:14px 14px 0 0; }
+  .popup-card img{ width:100%; height:130px; object-fit:cover; display:block; border-radius:14px 14px 0 0; }
+  .tip-inner img{ width:52px; height:38px; object-fit:cover; border-radius:6px; flex:none; }
+
+  /* ---------- Мобильная раскладка ----------
+     Узкий экран: карточка и язык в одну строку сверху, легенда свёрнута
+     в компактную кнопку слева, заявка — справа. Зум скрыт: на телефоне
+     масштабируют жестом, а кнопки только съедают место. */
+  @media (max-width:700px){
+    #topbar{ top:10px; left:10px; right:10px; gap:8px; }
+    .brand{
+      padding:9px 12px;
+      gap:10px;
+      max-width:calc(100% - 78px);
+    }
+    .brand h1{ font-size:15px; }
+    .brand p{ display:none; }
+    .counter{ padding-left:10px; }
+    .counter .num{ font-size:19px; }
+    .counter .label{ font-size:9px; max-width:56px; }
+
+    #langSwitch{ padding:3px; }
+    #langSwitch a{ padding:6px 8px; font-size:11.5px; }
+
+    #legend{ left:10px; bottom:10px; width:auto; max-width:calc(100% - 20px); }
+    #legendToggle{ padding:10px 13px; font-size:12.5px; }
+    #legendBody{ padding:0 13px 10px 13px; }
+    .legend-row{ font-size:13px; }
+
+    #reportBtn{
+      right:10px; bottom:10px;
+      padding:11px 16px;
+      font-size:13px;
+    }
+    .leaflet-bottom.leaflet-right .leaflet-control-zoom{ display:none; }
+    .leaflet-control-attribution{ font-size:9.5px; }
+  }
+
+  /* Совсем узкие экраны: кнопка во всю ширину под легендой */
+  @media (max-width:400px){
+    .brand p{ display:none; }
+    #reportBtn{ left:10px; right:10px; text-align:center; }
+    #legend{ bottom:58px; }
   }
 
   /* ---------- Markers ---------- */
@@ -329,27 +444,35 @@
 
 <div id="topbar">
   <div class="brand">
-    <h1>{% translate "Карта доступности" %}</h1>
-    <p>{% translate "Места, о которых сообщили жители через Telegram-бота" %}</p>
+    <div class="brand-text">
+      <h1>{% translate "Карта доступности" %}</h1>
+      <p>{% translate "Места, о которых сообщили жители через Telegram-бота" %}</p>
+    </div>
+    <div class="counter">
+      <span class="num" id="pointCount">0</span>
+      <span class="label">{% translate "точек на карте" %}</span>
+    </div>
   </div>
-  <div class="counter">
-    <span class="num" id="pointCount">0</span>
-    <span class="label">{% translate "точек на карте" %}</span>
-  </div>
+
+  <nav id="langSwitch" aria-label="{% translate "Язык" %}">
+    {% get_current_language as CUR %}
+    <a href="?lang=ru" class="{% if CUR == 'ru' %}active{% endif %}">RU</a>
+    <a href="?lang=uz" class="{% if CUR == 'uz' %}active{% endif %}">UZ</a>
+  </nav>
 </div>
 
 <aside id="legend">
-  <h2>{% translate "Категории (нажмите, чтобы скрыть)" %}</h2>
-  <div id="legendRows"></div>
+  <button id="legendToggle" type="button" aria-expanded="true" aria-controls="legendBody">
+    <span>{% translate "Категории" %}</span>
+    <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+  <div id="legendBody">
+    <p class="legend-hint">{% translate "Нажмите, чтобы скрыть" %}</p>
+    <div id="legendRows"></div>
+  </div>
 </aside>
 
 <button id="reportBtn">{% translate "Сообщить о месте" %}</button>
-
-<nav id="langSwitch" aria-label="{% translate "Язык" %}">
-  {% get_current_language as CUR %}
-  <a href="?lang=ru" class="{% if CUR == 'ru' %}active{% endif %}">RU</a>
-  <a href="?lang=uz" class="{% if CUR == 'uz' %}active{% endif %}">UZ</a>
-</nav>
 
 <div id="modalWrap">
   <div id="modal">
@@ -464,6 +587,8 @@
         <span class="swatch" style="background:${c.color}"></span>
         <span class="legend-text">${escapeHtml(c.label)}</span>
         <span class="legend-count">${c.count}</span>`;
+      row.setAttribute('role', 'button');
+      row.tabIndex = 0;
       row.addEventListener('click', e => {
         e.preventDefault();
         const off = hidden.has(c.code);
@@ -517,6 +642,20 @@
   }
 
   load();
+
+  // ---------- Легенда: сворачивание ----------
+  const legend = document.getElementById('legend');
+  const legendToggle = document.getElementById('legendToggle');
+
+  function setLegendOpen(open){
+    legend.classList.toggle('collapsed', !open);
+    legendToggle.setAttribute('aria-expanded', String(open));
+  }
+  legendToggle.addEventListener('click', () => {
+    setLegendOpen(legend.classList.contains('collapsed'));
+  });
+  // На телефоне легенда мешает карте, поэтому стартует свёрнутой
+  if (window.matchMedia('(max-width:700px)').matches) setLegendOpen(false);
 
   // ---------- Modal ----------
   const modalWrap = document.getElementById('modalWrap');
