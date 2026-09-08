@@ -246,3 +246,7 @@ if not DEBUG:
 # Берётся из ALLOWED_HOSTS, чтобы домен не стал ещё одним местом,
 # которое надо помнить при переезде.
 SITE_URL = f"https://{ALLOWED_HOSTS[0]}" if ALLOWED_HOSTS else "http://localhost:8000"
+
+# Юзернейм бота для ссылки с карты. В коде не зашивается по той же
+# причине, что и домен: имя бота может смениться.
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "")

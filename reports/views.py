@@ -136,4 +136,7 @@ def map_page(request):
         "reported": _("Сообщено"),
         "resolved": _("Устранено"),
     }
-    return render(request, "reports/map.html", {"js_strings": js_strings})
+    return render(request, "reports/map.html", {
+        "js_strings": js_strings,
+        "bot_username": settings.TELEGRAM_BOT_USERNAME,
+    })

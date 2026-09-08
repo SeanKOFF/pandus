@@ -102,3 +102,9 @@ msgstr "Qulay shahar — qulaylik xaritasi"
 
 msgid "Места в Ташкенте, где нет условий для передвижения"
 msgstr "Toshkentda harakatlanish uchun sharoit yo'q joylar"
+
+msgid "Открыть бота"
+msgstr "Botni ochish"
+
+msgid "Закрыть"
+msgstr "Yopish"

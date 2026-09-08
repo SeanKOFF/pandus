@@ -224,6 +224,21 @@
     color:var(--ink-soft);
     margin:0 0 18px 0;
   }
+  /* Ссылка в бота — основное действие, поэтому акцентный цвет.
+     Кнопка «Закрыть» рядом остаётся второстепенной. */
+  #modalOpenBot{
+    display:inline-block;
+    background:var(--red);
+    color:#fff;
+    text-decoration:none;
+    border-radius:var(--radius-pill);
+    padding:10px 18px;
+    font-size:14px;
+    font-weight:600;
+    margin-right:8px;
+  }
+  #modalOpenBot:hover{ background:#a92024; }
+
   #modal button{
     background:var(--ink);
     color:#fff;
@@ -483,7 +498,8 @@
   <div id="modal">
     <h3>{% translate "Как точка попадает на карту" %}</h3>
     <p>{% translate "Откройте Telegram-бота, отправьте геолокацию и фото места без пандуса или проезда. После проверки модератором точка появится на этой карте — её увидят все, включая городские службы." %}</p>
-    <button id="modalClose">{% translate "Понятно" %}</button>
+    <a id="modalOpenBot" href="https://t.me/{{ bot_username }}" target="_blank" rel="noopener">{% translate "Открыть бота" %}</a>
+    <button id="modalClose">{% translate "Закрыть" %}</button>
   </div>
 </div>
 
