@@ -19,6 +19,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from aiogram import Bot, Dispatcher, F
+from aiogram.types import BotCommand
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -154,6 +155,22 @@ def language_kb():
 # --- Хендлеры ------------------------------------------------------
 
 dp = Dispatcher(storage=MemoryStorage())
+
+
+@dp.startup()
+async def set_commands(bot: Bot):
+    """Меню команд рядом с полем ввода. Без него /lang и /my не найти:
+    пользователь о них просто не узнает. Telegram выбирает набор по
+    языку интерфейса пользователя — это не то же, что Reporter.language,
+    но лучше, чем один язык для всех."""
+    from reports.bot_texts import COMMAND_DESCRIPTIONS
+
+    for lang, pairs in COMMAND_DESCRIPTIONS.items():
+        commands = [BotCommand(command=c, description=d) for c, d in pairs]
+        # Русский набор ставим умолчанием: он покажется всем, чей язык
+        # интерфейса не узбекский.
+        kwargs = {} if lang == "ru" else {"language_code": lang}
+        await bot.set_my_commands(commands, **kwargs)
 
 
 @dp.message(Command("start"))

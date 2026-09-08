@@ -6,6 +6,26 @@
 пользователями. Явная передача языка такой ошибки не допускает.
 """
 
+# Описания команд для меню Telegram (кнопка рядом с полем ввода).
+# Отдельно от TEXTS: подставляются один раз при старте бота, а не
+# в диалоге, и Telegram сам выбирает набор по языку интерфейса.
+COMMAND_DESCRIPTIONS = {
+    "ru": [
+        ("start", "Отправить заявку"),
+        ("lang", "Сменить язык"),
+        ("my", "Сколько заявок я отправил"),
+        ("cancel", "Прервать заполнение"),
+        ("delete", "Как убрать заявку с карты"),
+    ],
+    "uz": [
+        ("start", "Ariza yuborish"),
+        ("lang", "Tilni o‘zgartirish"),
+        ("my", "Nechta ariza yuborganman"),
+        ("cancel", "To‘ldirishni bekor qilish"),
+        ("delete", "Arizani xaritadan qanday olib tashlash"),
+    ],
+}
+
 TEXTS = {
     "choose_language": {
         "ru": "Выберите язык / Tilni tanlang",
