@@ -4,8 +4,8 @@ from django.utils.html import format_html
 
 from .models import Category, Report, Reporter, ReportStatusHistory
 
-admin.site.site_header = "Pandus — модерация"
-admin.site.site_title = "Pandus"
+admin.site.site_header = "Qulay shahar — модерация"
+admin.site.site_title = "Qulay shahar"
 admin.site.index_title = "Заявки о проблемных местах"
 
 

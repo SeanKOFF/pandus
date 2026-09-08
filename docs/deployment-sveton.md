@@ -34,10 +34,10 @@ nginx при старте попытается разрешить это имя.
 
 ## 1. DNS
 
-Добавьте A-запись `pandus.svetanet.uz` на IP сервера. Проверка:
+Добавьте A-запись `qulayshahar.uz` на IP сервера. Проверка:
 
 ```bash
-dig pandus.svetanet.uz +short
+dig qulayshahar.uz +short
 ```
 
 Пока запись не разошлась, сертификат не выпустится.
@@ -51,7 +51,7 @@ dig pandus.svetanet.uz +short
 ```bash
 cd /home/deploy/sveton
 docker compose stop frontend
-sudo certbot certonly --standalone -d pandus.svetanet.uz
+sudo certbot certonly --standalone -d qulayshahar.uz
 docker compose start frontend
 ```
 
@@ -83,8 +83,8 @@ chmod 600 .env
 ```
 COMPOSE_FILE=docker-compose.yml:docker-compose.shared-nginx.yml
 PROXY_NETWORK=sveton_default
-DOMAIN=pandus.svetanet.uz
-DJANGO_ALLOWED_HOSTS=pandus.svetanet.uz
+DOMAIN=qulayshahar.uz
+DJANGO_ALLOWED_HOSTS=qulayshahar.uz
 DJANGO_SECRET_KEY=<сгенерированный ключ>
 DJANGO_DEBUG=0
 DB_PASSWORD=<сгенерированный пароль>
@@ -153,8 +153,8 @@ docker compose exec web python manage.py createsuperuser
 
 Проверьте:
 
-- `https://pandus.svetanet.uz/` — карта
-- `https://pandus.svetanet.uz/admin/` — вход в модерацию
+- `https://qulayshahar.uz/` — карта
+- `https://qulayshahar.uz/admin/` — вход в модерацию
 - `https://svetanet.uz/`, `https://chiroqyoq.uz/`, `https://gazyoq.uz/` —
   работают как раньше
 - бот отвечает на `/start`

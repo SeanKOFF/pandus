@@ -96,3 +96,9 @@ msgstr "Xabar berilgan"
 #: reports/views.py:137
 msgid "Устранено"
 msgstr "Bartaraf etilgan"
+
+msgid "Qulay shahar — карта доступности"
+msgstr "Qulay shahar — qulaylik xaritasi"
+
+msgid "Места в Ташкенте, где нет условий для передвижения"
+msgstr "Toshkentda harakatlanish uchun sharoit yo'q joylar"
