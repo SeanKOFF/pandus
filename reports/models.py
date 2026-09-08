@@ -164,6 +164,11 @@ class Report(models.Model):
                 changed_by=self.moderator,
             )
 
+            if self.reporter_id:
+                # Импорт локальный: модели не должны тянуть requests.
+                from reports.notify import notify_status
+                notify_status(self, self.status)
+
 
 class ReportStatusHistory(models.Model):
     """Журнал смены статусов. Заменяет отдельную «таблицу решённых проблем»:

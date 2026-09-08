@@ -241,3 +241,8 @@ if not DEBUG:
         }
     else:
         MAILERS = {"default": {"BACKEND": "django.core.mail.backends.dummy.EmailBackend"}}
+
+# Абсолютный адрес для ссылок вне запроса (уведомления в Telegram).
+# Берётся из ALLOWED_HOSTS, чтобы домен не стал ещё одним местом,
+# которое надо помнить при переезде.
+SITE_URL = f"https://{ALLOWED_HOSTS[0]}" if ALLOWED_HOSTS else "http://localhost:8000"
