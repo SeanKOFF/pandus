@@ -94,8 +94,8 @@ def create_report(reporter, category_id, lat, lng, photo_ref, storage_name, desc
         description=description or "",
         telegram_message_id=message_id,
         status=Report.Status.PUBLISHED if trusted else Report.Status.PENDING,
-        # След в карточке: видно, что точка не проходила проверку кадра
-        moderation_notes="Опубликовано автоматически: доверенный автор" if trusted else "",
+        # Метка для очереди постпроверки: кадр человеком не просматривался
+        auto_published=trusted,
     )
     return report.id, trusted
 

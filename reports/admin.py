@@ -1,6 +1,7 @@
 from django.contrib import admin, messages
 from django.utils import timezone
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from .models import Category, Report, Reporter, ReportStatusHistory
 
@@ -38,9 +39,10 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Reporter)
 class ReporterAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "telegram_user_id", "language", "is_trusted", "is_blocked", "report_count", "first_seen_at")
+    list_display = ("__str__", "telegram_user_id", "trusted_note", "language", "is_trusted", "is_blocked", "report_count")
     list_filter = ("is_trusted", "is_blocked", "language")
-    search_fields = ("telegram_username", "telegram_user_id")
+    search_fields = ("telegram_username", "telegram_user_id", "trusted_note")
+    list_editable = ("trusted_note",)
     actions = ("trust", "untrust", "block", "unblock")
 
     @admin.display(description="Заявок")
@@ -85,15 +87,16 @@ class StatusHistoryInline(admin.TabularInline):
 
 @admin.register(Report)
 class ReportAdmin(admin.ModelAdmin):
-    list_display = ("id", "photo_thumb", "category", "status_badge", "address_hint", "created_at", "age")
-    list_filter = ("status", "category", "created_at")
+    list_display = ("id", "photo_thumb", "category", "status_badge", "check_badge", "address_hint", "created_at", "age")
+    list_filter = ("status", "category", "auto_published", "reviewed", "created_at")
     search_fields = ("address_hint", "description", "id")
     date_hierarchy = "created_at"
     list_select_related = ("category", "reporter")
     inlines = (StatusHistoryInline,)
-    actions = ("publish", "mark_resolved", "reject")
+    actions = ("mark_reviewed", "publish", "mark_resolved", "reject")
     readonly_fields = ("created_at", "moderated_at", "resolved_at", "updated_at",
-                       "photo_preview", "map_link", "reporter", "telegram_message_id")
+                       "photo_preview", "map_link", "reporter", "telegram_message_id",
+                       "auto_published")
 
     class Media:
         css = {"all": ("reports/lightbox.css",)}
@@ -101,7 +104,8 @@ class ReportAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ("Модерация", {
-            "fields": ("status", "category", "moderation_notes", "rejected_reason", "moderator"),
+            "fields": ("status", "category", "reviewed", "moderation_notes",
+                       "rejected_reason", "moderator"),
         }),
         ("Место", {
             "fields": ("photo_preview", "map_link", "lat", "lng", "address_hint", "description"),
@@ -113,7 +117,8 @@ class ReportAdmin(admin.ModelAdmin):
         ("Служебное", {
             "classes": ("collapse",),
             "fields": ("reporter", "telegram_message_id",
-                       "created_at", "moderated_at", "resolved_at", "updated_at"),
+                       "auto_published", "created_at", "moderated_at",
+                       "resolved_at", "updated_at"),
         }),
     )
 
@@ -151,6 +156,23 @@ class ReportAdmin(admin.ModelAdmin):
             STATUS_COLORS.get(obj.status, "#666"), obj.get_status_display(),
         )
 
+    @admin.display(description="Проверка")
+    def check_badge(self, obj):
+        """Показывает, просматривал ли человек этот кадр.
+
+        Точка доверенного автора попадает на карту мгновенно, поэтому
+        единственная защита от лиц и номеров в кадре — просмотр постфактум.
+        """
+        if not obj.auto_published:
+            return "—"
+        # mark_safe, а не format_html: разметка статичная, подставлять нечего
+        if obj.reviewed:
+            return mark_safe('<span style="color:#3F7D53">проверено</span>')
+        return mark_safe(
+            '<span style="background:#B9760A;color:#fff;padding:2px 8px;'
+            'border-radius:10px;font-size:11px">без проверки</span>'
+        )
+
     @admin.display(description="На карте")
     def map_link(self, obj):
         return format_html(
@@ -176,9 +198,15 @@ class ReportAdmin(admin.ModelAdmin):
                 continue
             report.status = status
             report.moderator = request.user
+            report.reviewed = True     # действие в админке = кадр просмотрен
             report.save()
             changed += 1
         self.message_user(request, f"{verb}: {changed}", messages.SUCCESS)
+
+    @admin.action(description="Отметить кадр проверенным")
+    def mark_reviewed(self, request, queryset):
+        n = queryset.update(reviewed=True)
+        self.message_user(request, f"Отмечено проверенными: {n}", messages.SUCCESS)
 
     @admin.action(description="Опубликовать на карте")
     def publish(self, request, queryset):

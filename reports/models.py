@@ -55,7 +55,12 @@ class Reporter(models.Model):
     # проверки кадра на лица и номера, раздавать широко не стоит.
     is_trusted = models.BooleanField(
         "Доверенный автор", default=False,
-        help_text="Заявки публикуются сразу, минуя модерацию",
+        help_text="Заявки публикуются сразу, минуя очередь модерации",
+    )
+    trusted_note = models.CharField(
+        "Кто это", max_length=200, blank=True,
+        help_text="Имя, организация, кто и когда выдал доверие — "
+                  "чтобы через полгода было понятно, откуда этот доступ",
     )
     is_blocked = models.BooleanField("Заблокирован", default=False)
     first_seen_at = models.DateTimeField(auto_now_add=True)
@@ -116,6 +121,10 @@ class Report(models.Model):
         verbose_name="Модератор", related_name="moderated_reports",
     )
     moderation_notes = models.TextField("Заметки модератора", blank=True)
+    # Опубликовано в обход очереди — кадр человеком не просматривался
+    auto_published = models.BooleanField("Автопубликация", default=False)
+    # Постпроверка: модератор посмотрел фото уже после публикации
+    reviewed = models.BooleanField("Кадр проверен", default=False)
     rejected_reason = models.TextField("Причина отклонения", blank=True)
 
     telegram_message_id = models.BigIntegerField(null=True, blank=True)
