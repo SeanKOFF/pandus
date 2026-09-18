@@ -19,7 +19,6 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import BotCommand
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -79,6 +78,12 @@ def save_photo(data: bytes) -> tuple[str, str]:
 
 @sync_to_async
 def create_report(reporter, category_id, lat, lng, photo_ref, storage_name, description, message_id):
+    """Создаёт заявку. У доверенного автора она сразу уходит на карту.
+
+    Возвращает (id, опубликовано_сразу) — от второго значения зависит,
+    что бот ответит человеку.
+    """
+    trusted = reporter.is_trusted
     report = Report.objects.create(
         reporter=reporter,
         category_id=category_id,
@@ -88,8 +93,11 @@ def create_report(reporter, category_id, lat, lng, photo_ref, storage_name, desc
         photo_storage=storage_name,
         description=description or "",
         telegram_message_id=message_id,
+        status=Report.Status.PUBLISHED if trusted else Report.Status.PENDING,
+        # След в карточке: видно, что точка не проходила проверку кадра
+        moderation_notes="Опубликовано автоматически: доверенный автор" if trusted else "",
     )
-    return report.id
+    return report.id, trusted
 
 
 @sync_to_async
@@ -107,6 +115,9 @@ def rate_limit_exceeded(reporter):
     from datetime import timedelta
 
     from django.utils import timezone as tz
+
+    if reporter.is_trusted:
+        return None
 
     lang = reporter.language
     now = tz.now()
@@ -155,22 +166,6 @@ def language_kb():
 # --- Хендлеры ------------------------------------------------------
 
 dp = Dispatcher(storage=MemoryStorage())
-
-
-@dp.startup()
-async def set_commands(bot: Bot):
-    """Меню команд рядом с полем ввода. Без него /lang и /my не найти:
-    пользователь о них просто не узнает. Telegram выбирает набор по
-    языку интерфейса пользователя — это не то же, что Reporter.language,
-    но лучше, чем один язык для всех."""
-    from reports.bot_texts import COMMAND_DESCRIPTIONS
-
-    for lang, pairs in COMMAND_DESCRIPTIONS.items():
-        commands = [BotCommand(command=c, description=d) for c, d in pairs]
-        # Русский набор ставим умолчанием: он покажется всем, чей язык
-        # интерфейса не узбекский.
-        kwargs = {} if lang == "ru" else {"language_code": lang}
-        await bot.set_my_commands(commands, **kwargs)
 
 
 @dp.message(Command("start"))
@@ -307,13 +302,14 @@ async def got_category(call: CallbackQuery, state: FSMContext):
 async def _finish(target_message, state, from_user, description):
     data = await state.get_data()
     reporter = await get_or_create_reporter(from_user)
-    report_id = await create_report(
+    report_id, published = await create_report(
         reporter, data["category_id"], data["lat"], data["lng"],
         data["photo_ref"], data["storage"], description, data.get("message_id"),
     )
     lang = data.get("lang", "ru")
     await state.clear()
-    await target_message.answer(t("accepted", lang, id=report_id))
+    key = "accepted_published" if published else "accepted"
+    await target_message.answer(t(key, lang, id=report_id))
 
 
 @dp.callback_query(Flow.waiting_description, F.data == "skip_desc")

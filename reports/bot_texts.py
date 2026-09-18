@@ -6,26 +6,6 @@
 пользователями. Явная передача языка такой ошибки не допускает.
 """
 
-# Описания команд для меню Telegram (кнопка рядом с полем ввода).
-# Отдельно от TEXTS: подставляются один раз при старте бота, а не
-# в диалоге, и Telegram сам выбирает набор по языку интерфейса.
-COMMAND_DESCRIPTIONS = {
-    "ru": [
-        ("start", "Отправить заявку"),
-        ("lang", "Сменить язык"),
-        ("my", "Сколько заявок я отправил"),
-        ("cancel", "Прервать заполнение"),
-        ("delete", "Как убрать заявку с карты"),
-    ],
-    "uz": [
-        ("start", "Ariza yuborish"),
-        ("lang", "Tilni o‘zgartirish"),
-        ("my", "Nechta ariza yuborganman"),
-        ("cancel", "To‘ldirishni bekor qilish"),
-        ("delete", "Arizani xaritadan qanday olib tashlash"),
-    ],
-}
-
 TEXTS = {
     "choose_language": {
         "ru": "Выберите язык / Tilni tanlang",
@@ -128,6 +108,12 @@ TEXTS = {
     "cancelled": {
         "ru": "Заявка отменена. Чтобы начать заново — /start",
         "uz": "Ariza bekor qilindi. Qaytadan boshlash uchun — /start",
+    },
+    "accepted_published": {
+        "ru": ("Заявка №{id} принята и сразу опубликована на карте.\n\n"
+               "Чтобы сообщить о другом месте — /start"),
+        "uz": ("№{id} ariza qabul qilindi va darhol xaritada e’lon qilindi.\n\n"
+               "Boshqa joy haqida xabar berish uchun — /start"),
     },
     "my_reports": {
         "ru": "Вы отправили заявок: {count}",

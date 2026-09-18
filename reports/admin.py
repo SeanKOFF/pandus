@@ -4,8 +4,8 @@ from django.utils.html import format_html
 
 from .models import Category, Report, Reporter, ReportStatusHistory
 
-admin.site.site_header = "Qulay shahar — модерация"
-admin.site.site_title = "Qulay shahar"
+admin.site.site_header = "Pandus — модерация"
+admin.site.site_title = "Pandus"
 admin.site.index_title = "Заявки о проблемных местах"
 
 
@@ -38,14 +38,29 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Reporter)
 class ReporterAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "telegram_user_id", "language", "is_blocked", "report_count", "first_seen_at")
-    list_filter = ("is_blocked", "language")
+    list_display = ("__str__", "telegram_user_id", "language", "is_trusted", "is_blocked", "report_count", "first_seen_at")
+    list_filter = ("is_trusted", "is_blocked", "language")
     search_fields = ("telegram_username", "telegram_user_id")
-    actions = ("block", "unblock")
+    actions = ("trust", "untrust", "block", "unblock")
 
     @admin.display(description="Заявок")
     def report_count(self, obj):
         return obj.reports.count()
+
+    @admin.action(description="Сделать доверенным (заявки публикуются сразу)")
+    def trust(self, request, queryset):
+        n = queryset.update(is_trusted=True)
+        self.message_user(
+            request,
+            f"Доверенных авторов: {n}. Их заявки публикуются без проверки кадра "
+            f"на лица и автомобильные номера.",
+            messages.WARNING,
+        )
+
+    @admin.action(description="Снять доверие")
+    def untrust(self, request, queryset):
+        n = queryset.update(is_trusted=False)
+        self.message_user(request, f"Доверие снято: {n}")
 
     @admin.action(description="Заблокировать")
     def block(self, request, queryset):

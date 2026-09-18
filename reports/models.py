@@ -50,6 +50,13 @@ class Reporter(models.Model):
     language = models.CharField("Язык", max_length=5, default="ru",
                                 choices=[("ru", "Русский"), ("uz", "O‘zbekcha")])
     language_chosen = models.BooleanField("Язык выбран", default=False)
+    # Заявки доверенного автора публикуются сразу, без очереди модерации,
+    # и не попадают под лимиты. Ставится вручную в админке — это обход
+    # проверки кадра на лица и номера, раздавать широко не стоит.
+    is_trusted = models.BooleanField(
+        "Доверенный автор", default=False,
+        help_text="Заявки публикуются сразу, минуя модерацию",
+    )
     is_blocked = models.BooleanField("Заблокирован", default=False)
     first_seen_at = models.DateTimeField(auto_now_add=True)
 
@@ -163,11 +170,6 @@ class Report(models.Model):
                 new_status=self.status,
                 changed_by=self.moderator,
             )
-
-            if self.reporter_id:
-                # Импорт локальный: модели не должны тянуть requests.
-                from reports.notify import notify_status
-                notify_status(self, self.status)
 
 
 class ReportStatusHistory(models.Model):

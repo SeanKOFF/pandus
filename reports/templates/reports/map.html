@@ -4,14 +4,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% translate "Qulay shahar — карта доступности" %}</title>
-<meta property="og:title" content="{% translate "Qulay shahar — карта доступности" %}">
-<meta property="og:description" content="{% translate "Места в Ташкенте, где нет условий для передвижения" %}">
-<meta property="og:url" content="https://qulayshahar.uz/">
-<meta property="og:type" content="website">
+<title>{% translate "Карта доступности" %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
   :root{
@@ -224,21 +219,6 @@
     color:var(--ink-soft);
     margin:0 0 18px 0;
   }
-  /* Ссылка в бота — основное действие, поэтому акцентный цвет.
-     Кнопка «Закрыть» рядом остаётся второстепенной. */
-  #modalOpenBot{
-    display:inline-block;
-    background:var(--red);
-    color:#fff;
-    text-decoration:none;
-    border-radius:var(--radius-pill);
-    padding:10px 18px;
-    font-size:14px;
-    font-weight:600;
-    margin-right:8px;
-  }
-  #modalOpenBot:hover{ background:#a92024; }
-
   #modal button{
     background:var(--ink);
     color:#fff;
@@ -498,8 +478,7 @@
   <div id="modal">
     <h3>{% translate "Как точка попадает на карту" %}</h3>
     <p>{% translate "Откройте Telegram-бота, отправьте геолокацию и фото места без пандуса или проезда. После проверки модератором точка появится на этой карте — её увидят все, включая городские службы." %}</p>
-    <a id="modalOpenBot" href="https://t.me/{{ bot_username }}" target="_blank" rel="noopener">{% translate "Открыть бота" %}</a>
-    <button id="modalClose">{% translate "Закрыть" %}</button>
+    <button id="modalClose">{% translate "Понятно" %}</button>
   </div>
 </div>
 
