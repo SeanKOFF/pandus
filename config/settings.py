@@ -51,6 +51,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
+    'reports.middleware.AdminLocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -131,6 +132,11 @@ LANGUAGES = [
     ("uz", "O‘zbekcha"),
 ]
 LOCALE_PATHS = [BASE_DIR / "locale"]
+
+# Язык админки задан отдельно: подписи моделей написаны в коде
+# по-русски, и переключение карты на узбекский не должно превращать
+# интерфейс модерации в смесь двух языков.
+ADMIN_LANGUAGE_CODE = os.environ.get("ADMIN_LANGUAGE_CODE", "ru")
 USE_I18N = True
 
 TIME_ZONE = "Asia/Tashkent"

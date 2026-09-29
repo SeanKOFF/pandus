@@ -1,0 +1,17 @@
+# Русский каталог проекта.
+#
+# Подписи моделей и полей написаны в коде по-русски, поэтому переводить
+# их не нужно. Здесь перекрываются строки самого Django, для которых
+# в его каталоге нет русского перевода: LOCALE_PATHS имеет приоритет
+# над встроенными переводами.
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+
+#: django/db/models/fields/__init__.py
+msgid "- Select an option -"
+msgstr "— Выберите действие —"
