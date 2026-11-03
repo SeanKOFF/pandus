@@ -174,6 +174,7 @@ ONEDRIVE_FOLDER = os.environ.get("ONEDRIVE_FOLDER", "pandus")
 
 # --- Telegram ---
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "sharoit_bot")
 
 # --- Хранилище фотографий ---
 # local | onedrive
