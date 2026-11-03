@@ -159,6 +159,7 @@
     cursor:pointer;
   }
   #reportBtn:hover{ background:#a92024; }
+  #reportBtn{ display:inline-block; text-decoration:none; color:#fff; }
 
   /* Зум поднимается над кнопкой, атрибуция прижата в самый угол */
   .leaflet-bottom.leaflet-right .leaflet-control-zoom{ margin-bottom:76px; }
@@ -472,15 +473,7 @@
   </div>
 </aside>
 
-<button id="reportBtn">{% translate "Сообщить о месте" %}</button>
-
-<div id="modalWrap">
-  <div id="modal">
-    <h3>{% translate "Как точка попадает на карту" %}</h3>
-    <p>{% translate "Откройте Telegram-бота, отправьте геолокацию и фото места без пандуса или проезда. После проверки модератором точка появится на этой карте — её увидят все, включая городские службы." %}</p>
-    <button id="modalClose">{% translate "Понятно" %}</button>
-  </div>
-</div>
+<a id="reportBtn" href="https://t.me/sharoit_bot" target="_blank" rel="noopener">{% translate "Сообщить о месте" %}</a>
 
 {{ js_strings|json_script:"i18n-strings" }}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -658,10 +651,6 @@
   if (window.matchMedia('(max-width:700px)').matches) setLegendOpen(false);
 
   // ---------- Modal ----------
-  const modalWrap = document.getElementById('modalWrap');
-  document.getElementById('reportBtn').addEventListener('click', () => modalWrap.classList.add('open'));
-  document.getElementById('modalClose').addEventListener('click', () => modalWrap.classList.remove('open'));
-  modalWrap.addEventListener('click', (e) => { if (e.target === modalWrap) modalWrap.classList.remove('open'); });
 </script>
 </body>
 </html>
